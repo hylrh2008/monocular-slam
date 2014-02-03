@@ -24,7 +24,7 @@
 #include <opencv2/opencv.hpp>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <sophus/se3.h>
+#include <sophus/se3.hpp>
 
 #include <dvo/core/datatypes.h>
 #include <dvo/core/intrinsic_matrix.h>
@@ -136,7 +136,7 @@ private:
   std::vector<dvo::core::IntrinsicMatrix> intrinsics_;
   dvo::core::WeightCalculation weight_calculation_;
 
-  Sophus::SE3 last_xi_;
+  Sophus::SE3d last_xi_;
 
   dvo::core::Matrix6x6 last_a_;
 

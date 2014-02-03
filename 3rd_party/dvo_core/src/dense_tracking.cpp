@@ -21,7 +21,7 @@
 #include <dvo/dense_tracking.h>
 
 #include <assert.h>
-#include <sophus/se3.h>
+#include <sophus/se3.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
@@ -124,10 +124,10 @@ bool DenseTracker::match(RgbdImagePyramid& reference, RgbdImagePyramid& current,
   }
 
   // our first increment is the given guess
-  Sophus::SE3 inc(transformation.rotation(), transformation.translation());
+  Sophus::SE3d inc(transformation.rotation(), transformation.translation());
 
-  Revertable<Sophus::SE3> old(last_xi_);
-  Revertable<Sophus::SE3> initial(inc);
+  Revertable<Sophus::SE3d> old(last_xi_);
+  Revertable<Sophus::SE3d> initial(inc);
   Revertable<AffineTransform> estimate(AffineTransform::Identity());
 
   bool accept = true;
