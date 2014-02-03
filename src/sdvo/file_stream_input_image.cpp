@@ -8,7 +8,10 @@ namespace sdvo
 
 
 file_stream_input_image::file_stream_input_image(
-    const std::string& directory_name, std::string const& extension)
+    const std::string& directory_name,
+    std::string const& extension,
+    int cv_load_code)
+  : _cv_load_code(cv_load_code)
 {
   boost::filesystem::directory_iterator it(directory_name), itEnd;
 
@@ -33,7 +36,7 @@ file_stream_input_image::get_next_image(void)
 {
   if (_current_file != _last_file)
   {
-    cv::Mat result = cv::imread(*_current_file);
+    cv::Mat result = cv::imread(*_current_file, _cv_load_code);
     ++_current_file;
     return result;
   }

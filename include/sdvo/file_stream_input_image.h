@@ -11,12 +11,14 @@ namespace sdvo
 {
 
 class file_stream_input_image
+    : public image_input
 {
 public:
 
   file_stream_input_image(
       std::string const& directory_name,
-      std::string const& extension);
+      std::string const& extension,
+      int cv_load_code);
 
   cv::Mat get_next_image(void);
 
@@ -28,6 +30,7 @@ private:
   std::set<std::string> _files;
   std::set<std::string>::const_iterator _current_file;
   std::set<std::string>::const_iterator _last_file;
+  int _cv_load_code;
 };
 
 } // sdvo
