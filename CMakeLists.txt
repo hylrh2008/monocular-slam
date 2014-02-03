@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 1.9)
+cmake_minimum_required(VERSION 2.8)
 
 ###########################
 ## SET PROJECT VARIABLES ##
@@ -8,6 +8,8 @@ cmake_minimum_required(VERSION 1.9)
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin"  )
 set(LIBRARY_OUTPUT_PATH    "${CMAKE_SOURCE_DIR}/lib"  )
 set(CMAKE_MODULE_PATH      "${CMAKE_SOURCE_DIR}/cmake")
+
+option(BUILD_TESTS "Build the tests." ON)
 
 # Build type:
 # - None
