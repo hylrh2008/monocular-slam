@@ -5,8 +5,9 @@ cmake_minimum_required(VERSION 1.9)
 ###########################
 
 # Where the resulting files will spawn.
-set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin")
-set(LIBRARY_OUTPUT_PATH    "${CMAKE_SOURCE_DIR}/lib")
+set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin"  )
+set(LIBRARY_OUTPUT_PATH    "${CMAKE_SOURCE_DIR}/lib"  )
+set(CMAKE_MODULE_PATH      "${CMAKE_SOURCE_DIR}/cmake")
 
 # Build type:
 # - None
@@ -15,6 +16,8 @@ set(LIBRARY_OUTPUT_PATH    "${CMAKE_SOURCE_DIR}/lib")
 # - RelWithDebInfo
 # - MinSizeRel
 set(CMAKE_BUILD_TYPE Debug)
+
+include("cmake/config.cmake")
 
 # The main include directory of the project.
 include_directories("${CMAKE_SOURCE_DIR}/include")
