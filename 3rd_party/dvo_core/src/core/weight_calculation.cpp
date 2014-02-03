@@ -458,12 +458,12 @@ void WeightCalculation::calculateWeights(const cv::Mat& errors, cv::Mat& weights
     }
   }
 
-  dvo::visualization::Visualizer::instance()
-    //.show("residuals", cv::abs(errors))
-    //.showHistogram("residuals_histogram", errors, 5.0f, -255.0f, 255.0f)
-    .show("weights", weights)
-    //.show("weighted_residuals", cv::abs(weights.mul(errors)))
-  ;
+//  dvo::visualization::Visualizer::instance()
+//    //.show("residuals", cv::abs(errors))
+//    //.showHistogram("residuals_histogram", errors, 5.0f, -255.0f, 255.0f)
+//    .show("weights", weights)
+//    //.show("weighted_residuals", cv::abs(weights.mul(errors)))
+//  ;
 }
 
 } /* namespace core */

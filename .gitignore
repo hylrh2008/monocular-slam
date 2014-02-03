@@ -1,7 +1,8 @@
 CMakeLists.txt.user
-build
-data
+build*
+data*
 bin
 lib
 .*.swp
 *~
+*.autosave

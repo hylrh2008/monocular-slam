@@ -1,10 +1,5 @@
 cmake_minimum_required(VERSION 2.4.6)
-
-add_definitions(-mssse3)
-
-# Eigen3 library
-find_package(Eigen REQUIRED)
-include_directories(${EIGEN_INCLUDE_DIRS})
+project(dvo)
 
 # VTK library
 find_package(VTK REQUIRED)
@@ -14,6 +9,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
    "${SSE_FLAGS} -O3 -march=native"
 )
 
+message(STATUS "SSE_FLAGS: ${SSE_FLAGS}")
 include_directories("include")
 
 file(GLOB SOURCE

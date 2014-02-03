@@ -134,6 +134,7 @@ void RgbdImage::warpIntensitySseImpl(const AffineTransform& transformationx, con
   const __m128 t2 = _mm_load_ps(transformation.data() + 4);
   const __m128 t3 = _mm_load_ps(transformation.data() + 8);
 
+  // intrinsics
   const __m128 fxyxy = _mm_setr_ps(intrinsics.fx(), intrinsics.fy(), intrinsics.fx(), intrinsics.fy()); // [fx, fy, fx, fy]
   const __m128 oxyxy = _mm_setr_ps(intrinsics.ox(), intrinsics.oy(), intrinsics.ox(), intrinsics.oy()); // [ox, oy, ox, oy]
 

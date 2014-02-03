@@ -17,13 +17,19 @@ option(BUILD_TESTS "Build the tests." ON)
 # - Release
 # - RelWithDebInfo
 # - MinSizeRel
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
+add_definitions(-mssse3)
 
-include("cmake/config.cmake")
+# Eigen3 library
+find_package(Eigen REQUIRED)
+include_directories(${EIGEN_INCLUDE_DIRS})
 
 # The main include directory of the project.
 include_directories(
   "${CMAKE_SOURCE_DIR}/include"
-  "${CMAKE_SOURCE_DIR}/3rd_party/dvo_core/include")
+  "${CMAKE_SOURCE_DIR}/3rd_party/dvo_core/include"
+  "${CMAKE_SOURCE_DIR}/3rd_party/sophus")
+
+include("cmake/config.cmake")
 
 add_subdirectory("src")
