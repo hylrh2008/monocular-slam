@@ -1,5 +1,6 @@
 CMakeLists.txt.user
 build
+data
 bin
 lib
 .*.swp

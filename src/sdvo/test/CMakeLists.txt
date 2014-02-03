@@ -1,0 +1,5 @@
+init_test_directory()
+
+create_test_executable(file_stream_input_image_test "file_stream_input_image.cpp")
+target_link_libraries(file_stream_input_image_test sdvo)
+create_test(file_stream_input_image_test file_stream_input_image_test)
