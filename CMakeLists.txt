@@ -20,6 +20,8 @@ set(CMAKE_BUILD_TYPE Debug)
 include("cmake/config.cmake")
 
 # The main include directory of the project.
-include_directories("${CMAKE_SOURCE_DIR}/include")
+include_directories(
+  "${CMAKE_SOURCE_DIR}/include"
+  "${CMAKE_SOURCE_DIR}/3rd_party/dvo_core/include")
 
 add_subdirectory("src")
