@@ -15,7 +15,7 @@ function [timestamp,tx,ty,tz,qx,qy,qz,qw] = importfile(filename, startRow, endRo
 
 %% Initialize variables.
 if nargin<=2
-startRow = 3;
+startRow = 4;
 endRow = inf;
 end
 

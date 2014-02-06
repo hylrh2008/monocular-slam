@@ -17,7 +17,7 @@ option(BUILD_TESTS "Build the tests." ON)
 # - Release
 # - RelWithDebInfo
 # - MinSizeRel
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 add_definitions(-mssse3)
 
 # Eigen3 library

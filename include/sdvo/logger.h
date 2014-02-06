@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <Eigen/Eigen>
-
+#include <iomanip>
 namespace sdvo
 {
 
@@ -11,6 +11,7 @@ class logger
 {
   std::ostream& _output;
   double _timestamp;
+
 
 public:
 
@@ -25,10 +26,10 @@ public:
 
   void log(Eigen::Affine3d const& transform)
   {
-    Eigen::Quaterniond q = transform.linear();
+    Eigen::Quaterniond q = static_cast<Eigen::Quaterniond> (transform.linear());
 
     _output
-        << _timestamp << ' '
+        << std::setprecision(16) << _timestamp << ' '
         << transform.translation()[0] << ' '
         << transform.translation()[1] << ' '
         << transform.translation()[2] << ' '

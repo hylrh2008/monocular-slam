@@ -103,7 +103,7 @@ const IntrinsicMatrix& DenseTracker::intrinsics(size_t level)
 
 void DenseTracker::updateLastTransform(Eigen::Affine3d& last_transformation)
 {
-  last_xi_ = Sophus::SE3(last_transformation.rotation(), last_transformation.translation());
+  last_xi_ = Sophus::SE3d(last_transformation.rotation(), last_transformation.translation());
 }
 
 void DenseTracker::getCovarianceEstimate(Eigen::Matrix<double, 6, 6>& covariance) const
@@ -157,7 +157,7 @@ bool DenseTracker::match(RgbdImagePyramid& reference, RgbdImagePyramid& current,
 
       if(cfg.UseTemporalSmoothing())
       {
-        old.update() = inc.inverse() * old();
+        old.update() = inc.inverse() *  old();
       }
 
       if(cfg.UseEstimateSmoothing())
@@ -247,7 +247,7 @@ bool DenseTracker::match(RgbdImagePyramid& reference, RgbdImagePyramid& current,
 
   if(success)
   {
-    last_xi_ = Sophus::SE3(estimate().rotation().cast<double>(), estimate().translation().cast<double>());
+    last_xi_ = Sophus::SE3d(estimate().rotation().cast<double>(), estimate().translation().cast<double>());
   }
 
   transformation = estimate().inverse().cast<double>();
