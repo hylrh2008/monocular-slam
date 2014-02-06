@@ -12,7 +12,7 @@ public:
         cv::Mat intensity;
         cv::Mat depth_float;
         cv::cvtColor(rgb,intensity,cv::COLOR_RGB2GRAY);
-        depth.convertTo(depth_float,CV_32FC1);
+        depth.convertTo(depth_float,CV_32FC1,1/5000.);
         intensity.convertTo(intensity,CV_32FC1);
         return dvo::core::RgbdImagePyramid(intensity,depth_float);
     }

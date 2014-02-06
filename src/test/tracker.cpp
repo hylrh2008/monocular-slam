@@ -25,21 +25,27 @@ public:
         dvo::core::RgbdImagePyramid pyramidnew = create_rgbdpyramid(rgbnew,depthnew);
         timeval start;
         timeval end;
+        Eigen::Affine3d cumulated_transform(Eigen::Affine3d::Identity());
         while(true){
-            rgb=rgbnew;
-            depth=depthnew;
+            rgb = rgbnew;
+            depth = depthnew;
             pyramid  = pyramidnew;
-            depthnew=depth_source.get_next_image();
-            rgbnew=rgb_source.get_next_image();
+            depthnew = depth_source.get_next_image();
+            rgbnew = rgb_source.get_next_image();
             dvo::core::RgbdImagePyramid pyramidnew  = create_rgbdpyramid(rgbnew,depthnew);
             Eigen::Affine3d transform;
             gettimeofday(&start,NULL);
             tracker.match(pyramid,pyramidnew,transform);
             gettimeofday(&end,NULL);
+            cumulated_transform = cumulated_transform*transform;
             std::cerr<<start.tv_sec<<" "<<start.tv_usec<<std::endl;
             std::cerr<<end.tv_sec<<" "<<end.tv_usec<<std::endl<<std::endl;
-
             std::cerr<<transform.matrix()<<std::endl;
+            cv::imshow("Nouvelle",rgbnew);
+            cv::imshow("Ancienne",rgb);
+            cv::imshow("NouvelleD",depthnew*10.);
+            cv::imshow("AncienneD",depth*10.);
+            cv::waitKey();
         }
     }
 };
