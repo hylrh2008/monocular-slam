@@ -1,7 +1,7 @@
 project("sdvo")
 
 find_package("OpenCV" REQUIRED)
-find_package("Boost" COMPONENTS "filesystem" "system" REQUIRED)
+find_package("Boost" COMPONENTS "filesystem" "system" "regex" REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 

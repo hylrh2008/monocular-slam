@@ -17,24 +17,33 @@ TEST(file_stream_input_image, browse_files_in_lexical_order)
 {
   ASSERT_FALSE(test_directory.empty());
   std::cout << "test_directory: " << test_directory << std::endl;
-  file_stream_input_image input(test_directory, ".png", CV_LOAD_IMAGE_ANYCOLOR);
+  std::string basename = "test";
+  file_stream_input_image input(test_directory, basename, "png", CV_LOAD_IMAGE_ANYCOLOR);
   std::stringstream ss_input, ss_ref;
   input.print_remaining_files(ss_input);
 
   std::string files_in_order[] =
   {
-    "00",
-    "001",
-    "0a",
-    "aa",
-    "ab",
-    "ba"
+    "0.01",
+    "00.1",
+    "00.200",
+    "0001.1",
+    "2.001",
+    "20.11"
   };
 
   for (auto const& str : files_in_order)
-    ss_ref << test_directory << "/" << str << ".png" << std::endl;
+    ss_ref << test_directory << "/" << basename << str << ".png" << std::endl;
 
   ASSERT_EQ(ss_input.str(), ss_ref.str());
+
+  // Check timestamp from filename.
+  for (unsigned i = 0; i <  6; ++i)
+  {
+    cv::Mat unused = input.get_next_image();
+    std::cout << input.get_current_time_stamp() << std::endl;
+    EXPECT_EQ(double(atof(files_in_order[i].c_str())), input.get_current_time_stamp());
+  }
 }
 
 
@@ -43,7 +52,7 @@ TEST(file_stream_input_image, display_test)
   if (data_path.empty()) return;
   std::cout << "data_path: " << data_path << std::endl;
 
-  file_stream_input_image input(data_path, ".png", CV_LOAD_IMAGE_ANYCOLOR);
+  file_stream_input_image input(data_path, "", ".png", CV_LOAD_IMAGE_ANYCOLOR);
 
   while (true)
   {
