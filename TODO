@@ -1,3 +1,24 @@
- ☐ Récupérer les images et remplir les structures RGBDPyramid
- ☐ Tester une utilisation de dvo
- ☐ Calculer les estimations d'incertitudes
+Semi-Dense Visual Odometry:
+    ✔ Récupérer les images et remplir les structures RGBDPyramid @done (14-02-08 00:22)
+    ✔ Tester une utilisation de dvo @done (14-02-08 00:22)
+    ✔ Faire système de benchmark (Script Matlab + Tum utlis) @done (14-02-08 00:41)
+    
+    ☐ Faire ou copier un système simple de visualisation 3D temps réel.
+    
+    ☐ Ecrire la logique de matching stereo
+         ☐ Calculer ligne épipolaire a partir du déplacement
+         ☐ Calculer les estimations d'incertitudes
+           ☐ Geométrique 
+           ☐ Photométrique 
+           ☐ Conversion
+           ☐ Determiner les stddev des entrée: erreur sur l0 et erreur sur  l'intensité.
+         ☐ Parcourir ces lignes
+         ☐ Calculer score SSD
+         ☐ Tester l'incertitude de triangulation
+
+    ☐ Ecrire la logique de fusion bayésienne de l'information de profondeur
+         ☐ La tester avec une odometry "parfaite" (image Kinect)
+         ☐ La tester en vrai en série avec le tracking.
+         ☐ En faire un autre thread?
+
+   ☐ Modifier l'algorithme d'odométrie pour prendre en entrée un poids par pixel déterminé (Sa covariance!)

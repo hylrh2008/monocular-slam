@@ -1,4 +1,4 @@
-function [timestamp,tx,ty,tz,qx,qy,qz,qw] = importfile(filename, startRow, endRow)
+function [timestamp,tx,ty,tz,qw,qx,qy,qz] = importfile(filename, startRow, endRow)
 %IMPORTFILE Import numeric data from a text file as column vectors.
 %   [TIMESTAMP,TX,TY,TZ,QX,QY,QZ,QW] = IMPORTFILE(FILENAME) Reads data from
 %   text file FILENAME for the default selection.
@@ -17,7 +17,7 @@ function [timestamp,tx,ty,tz,qx,qy,qz,qw] = importfile(filename, startRow, endRo
 %% Initialize variables.
 delimiter = ' ';
 if nargin<=2
-    startRow = 1;
+    startRow = 4;
     endRow = inf;
 end
 

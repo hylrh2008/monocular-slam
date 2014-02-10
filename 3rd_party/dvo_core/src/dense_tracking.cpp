@@ -255,7 +255,12 @@ bool DenseTracker::match(RgbdImagePyramid& reference, RgbdImagePyramid& current,
   return success;
 }
 
-void DenseTracker::computeLeastSquaresEquationsForwardAdditive(dvo::core::RgbdImage& ref, dvo::core::RgbdImage& cur, const dvo::core::IntrinsicMatrix& intrinsics, const dvo::core::AffineTransform& transformation, dvo::core::LeastSquaresInterface& ls)
+void DenseTracker::computeLeastSquaresEquationsForwardAdditive(
+    dvo::core::RgbdImage& ref,
+    dvo::core::RgbdImage& cur,
+    const dvo::core::IntrinsicMatrix& intrinsics,
+    const dvo::core::AffineTransform& transformation,
+    dvo::core::LeastSquaresInterface& ls)
 {
   RgbdImage cur_warped;
   RgbdImage::PointCloud ref_transformed;
@@ -275,7 +280,12 @@ void DenseTracker::computeLeastSquaresEquationsForwardAdditive(dvo::core::RgbdIm
   computeLeastSquaresEquationsGeneric(residuals, cur_dx, cur_dy, ref_transformed, ls);
 }
 
-void DenseTracker::computeLeastSquaresEquationsForwardCompositional(dvo::core::RgbdImage& ref, dvo::core::RgbdImage& cur, const dvo::core::IntrinsicMatrix& intrinsics, const dvo::core::AffineTransform& transformation, dvo::core::LeastSquaresInterface& ls)
+void DenseTracker::computeLeastSquaresEquationsForwardCompositional(
+    dvo::core::RgbdImage& ref,
+    dvo::core::RgbdImage& cur,
+    const dvo::core::IntrinsicMatrix& intrinsics,
+    const dvo::core::AffineTransform& transformation,
+    dvo::core::LeastSquaresInterface& ls)
 {
   RgbdImage cur_warped;
   cv::Mat residuals, cur_dx, cur_dy;
@@ -294,7 +304,12 @@ void DenseTracker::computeLeastSquaresEquationsForwardCompositional(dvo::core::R
   computeLeastSquaresEquationsGeneric(residuals, cur_dx, cur_dy, ref.pointcloud, ls);
 }
 
-void DenseTracker::computeLeastSquaresEquationsForwardCompositionalESM(dvo::core::RgbdImage& ref, dvo::core::RgbdImage& cur, const dvo::core::IntrinsicMatrix& intrinsics, const dvo::core::AffineTransform& transformation, dvo::core::LeastSquaresInterface& ls)
+void DenseTracker::computeLeastSquaresEquationsForwardCompositionalESM(
+    dvo::core::RgbdImage& ref,
+    dvo::core::RgbdImage& cur,
+    const dvo::core::IntrinsicMatrix& intrinsics,
+    const dvo::core::AffineTransform& transformation,
+    dvo::core::LeastSquaresInterface& ls)
 {
   //static stopwatch_collection sw_warp(5, "warp@l"), sw_eqs(5, "eqs@l"), sw_total(5, "total@l");
   //sw_total[itctx_.Level].start();
@@ -323,7 +338,12 @@ void DenseTracker::computeLeastSquaresEquationsForwardCompositionalESM(dvo::core
   //sw_total[itctx_.Level].stopAndPrint();
 }
 
-void DenseTracker::computeLeastSquaresEquationsInverseCompositional(dvo::core::RgbdImage& ref, dvo::core::RgbdImage& cur, const dvo::core::IntrinsicMatrix& intrinsics, const dvo::core::AffineTransform& transformation, dvo::core::LeastSquaresInterface& ls)
+void DenseTracker::computeLeastSquaresEquationsInverseCompositional(
+    dvo::core::RgbdImage& ref,
+    dvo::core::RgbdImage& cur,
+    const dvo::core::IntrinsicMatrix& intrinsics,
+    const dvo::core::AffineTransform& transformation,
+    dvo::core::LeastSquaresInterface& ls)
 {
   RgbdImage cur_warped;
   cv::Mat residuals, ref_dx, ref_dy;
@@ -404,7 +424,12 @@ struct LeastSquaresEquationsReduction
   }
 };
 
-inline void DenseTracker::computeLeastSquaresEquationsGeneric(const cv::Mat& residuals, const cv::Mat& Jix, const cv::Mat& Jiy, const dvo::core::RgbdImage::PointCloud& points, dvo::core::LeastSquaresInterface& ls)
+inline void DenseTracker::computeLeastSquaresEquationsGeneric(
+    const cv::Mat& residuals,
+    const cv::Mat& Jix,
+    const cv::Mat& Jiy,
+    const dvo::core::RgbdImage::PointCloud& points,
+    dvo::core::LeastSquaresInterface& ls)
 {
   //static stopwatch_collection sw_weights(5, "weights@l"), sw_reduce(5, "reduce@l");
 
