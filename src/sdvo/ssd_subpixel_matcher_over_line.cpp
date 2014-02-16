@@ -115,7 +115,7 @@ double SSD_Subpixel_Matcher_Over_Line::match(){
     crt_write_index = (crt_write_index + 1) % ssd_window_size;
     crtPoint = crtPoint + step*direction_in_img_to_search;
   }
-  return error;
+  return sqrt(error)/ssd_window_size;
 }
 cv::Point2d SSD_Subpixel_Matcher_Over_Line::getMatch_point() const
 {
