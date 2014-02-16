@@ -1,16 +1,17 @@
 % t represents translation from origin in inertial frame
 % q represents orientation in inertial frame
 clear all
+folder='../../dataset/rgbd_dataset_freiburg3_long_office_household/';
 [timestamp, t(:,1), t(:,2), t(:,3), q(:,1), q(:,2), q(:,3), q(:,4)] = ...
-    extract_pos_from_algo('../../dataset/groundtruth.txt');
+    extract_pos_from_algo([folder 'groundtruth.txt']);
 
-[timestamp_rgb ] = extract_timestamp('../../dataset/rgb.txt');
-[timestamp_depth ] = extract_timestamp('../../dataset/depth.txt');
+[timestamp_rgb ] = extract_timestamp([folder 'rgb.txt']);
+[timestamp_depth ] = extract_timestamp([folder 'depth.txt']);
 
 [timestamp_essai, relativ_trans_essai(:,1), relativ_trans_essai(:,2), relativ_trans_essai(:,3), ...
     relativ_quat_essai(:,1), relativ_quat_essai(:,2), relativ_quat_essai(:,3), relativ_quat_essai(:,4)] ...
     = extract_pos_from_algo('../../bin/relativ_pose.txt');
-
+    
 [timestamp_literature, relativ_trans_literature(:,1), relativ_trans_literature(:,2), relativ_trans_literature(:,3), ...
     relativ_quat_literature(:,1), relativ_quat_literature(:,2), relativ_quat_literature(:,3), relativ_quat_literature(:,4)] ...
     = extract_pos_from_algo('../../dataset/freiburg1_xyz-rgbdslam.txt');
