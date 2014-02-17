@@ -6,14 +6,14 @@ Semi-Dense Visual Odometry:
     ☐ Faire ou copier un système simple de visualisation 3D temps réel.
     
     ☐ Ecrire la logique de matching stereo
-         ☐ Calculer ligne épipolaire a partir du déplacement
-         ☐ Calculer les estimations d'incertitudes
-           ☐ Geométrique 
-           ☐ Photométrique 
-           ☐ Conversion
+         ✔ Calculer ligne épipolaire a partir du déplacement @done (14-02-16 18:20)
+         ✔ Calculer les estimations d'incertitudes @done (14-02-16 18:20)
+           ✔ Geométrique @done (14-02-16 18:20)
+           ✔ Photométrique @done (14-02-16 18:20)
+           ✔ Conversion @done (14-02-16 18:20)
            ☐ Determiner les stddev des entrée: erreur sur l0 et erreur sur  l'intensité.
          ☐ Parcourir ces lignes
-         ☐ Calculer score SSD
+         ✔ Calculer score SSD @done (14-02-16 18:21)
          ☐ Tester l'incertitude de triangulation
 
     ☐ Ecrire la logique de fusion bayésienne de l'information de profondeur

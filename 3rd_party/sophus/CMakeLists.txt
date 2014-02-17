@@ -57,12 +57,12 @@ INCLUDE_DIRECTORIES(${INCLUDE_DIRS})
 
 # Added ${SOURCES} to executables so they show up in QtCreator (and possibly
 # other IDEs).
-#ADD_EXECUTABLE(test_so2 sophus/test_so2.cpp ${SOURCES})
-#ADD_EXECUTABLE(test_se2 sophus/test_se2.cpp ${SOURCES})
-#ADD_EXECUTABLE(test_so3 sophus/test_so3.cpp ${SOURCES})
-#ADD_EXECUTABLE(test_se3 sophus/test_se3.cpp ${SOURCES})
-#ADD_EXECUTABLE(test_rxso3 sophus/test_rxso3.cpp ${SOURCES})
-# ADD_EXECUTABLE(test_sim3 sophus/test_sim3.cpp ${SOURCES})
+ADD_EXECUTABLE(test_so2 sophus/test_so2.cpp ${SOURCES})
+ADD_EXECUTABLE(test_se2 sophus/test_se2.cpp ${SOURCES})
+ADD_EXECUTABLE(test_so3 sophus/test_so3.cpp ${SOURCES})
+ADD_EXECUTABLE(test_se3 sophus/test_se3.cpp ${SOURCES})
+ADD_EXECUTABLE(test_rxso3 sophus/test_rxso3.cpp ${SOURCES})
+ADD_EXECUTABLE(test_sim3 sophus/test_sim3.cpp ${SOURCES})
 
 #ENABLE_TESTING()
 #ADD_TEST(test_so2 test_so2)

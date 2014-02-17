@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} -std=gnu++0x"                  
 # Set Coverage flags.
 set(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
 set(CMAKE_C_FLAGS_COVERAGE   "${CMAKE_C_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage"  )
-if (${CMAKE_BUILD_TYPE} STREQUAL COVERAGE)
+if ("${CMAKE_BUILD_TYPE}" STREQUAL COVERAGE)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fprofile-arcs -ftest-coverage")
 endif()
 
