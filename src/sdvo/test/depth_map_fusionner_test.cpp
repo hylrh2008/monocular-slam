@@ -19,9 +19,6 @@ TEST(depth_map_fusionner_test, opencvTests){
       cv::Mat1f M2_ = cv::Mat1f(5,5,m2);
 
       cv::Mat1f M3 = M1_/M2_;
-      std::cerr<<M3<<std::endl;
-
-       std::cerr<<"TOTO"<<(0*NAN)<<std::endl;
 }
 
 TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_observation_variance)
@@ -30,7 +27,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_observation_variance)
   float data_variance_prior[2] = {2,2};
 
   float data_inverse_depth_obs[2] = {1,1};
-  float data_variance2_obs[2] = {NAN,2};
+  float data_variance2_obs[2] = {0,2};
 
   cv::Mat1f inverse_depth_prior = cv::Mat1f(2,1,data_inverse_depth_prior);
   cv::Mat1f variance_prior = cv::Mat1f(2,1,data_variance_prior);
@@ -225,8 +222,8 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_prior)
   depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
-  //std::cerr<<posterior<<std::endl;
-  //std::cerr<<variance<<std::endl;
+  std::cerr<<posterior<<std::endl;
+  std::cerr<<variance<<std::endl;
 
   for (int x = 0; x < 5; ++x) {
     for (int y = 0; y < 5; ++y) {

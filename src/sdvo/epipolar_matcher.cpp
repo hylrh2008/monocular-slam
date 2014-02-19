@@ -4,10 +4,11 @@
 #include <sdvo/ssd_subpixel_matcher_over_line.h>
 using namespace std;
 using namespace cv;
-#define CLOSE_INVERSE_DISTANCE 5
+#define CLOSE_INVERSE_DISTANCE 3
 #define FAR_INVERSE_DISTANCE 0.0001
-#define VARIANCE_MAX 0.1
-#define SEUIL_ERROR_SSD 20
+#define VARIANCE_MAX 0.05
+#define SEUIL_ERROR_SSD 5
+#define DRAW
 namespace sdvo{
 
 float epipolar_matcher::getFloatSubpix(const cv::Mat1f& img, const Point2d &pt)
@@ -71,9 +72,11 @@ epipolar_matcher::epipolar_matcher(const Eigen::Matrix3d &_intrinsics_matrix):
 }
 
 void epipolar_matcher::set_depth_prior(cv::Mat1f depth){
-  observed_depth_prior = depth;
+  depth_prior = depth;
 }
-
+void epipolar_matcher::set_depth_prior_variance(cv::Mat1f depth_variance){
+  depth_prior_variance = depth_variance;
+}
 cv::Mat1f epipolar_matcher::getObserved_depth_crt() const
 {
   return observed_depth_crt;
@@ -81,9 +84,13 @@ cv::Mat1f epipolar_matcher::getObserved_depth_crt() const
 
 cv::Mat1f epipolar_matcher::getObserved_depth_prior() const
 {
-  return observed_depth_prior;
+  return depth_prior;
 }
 
+cv::Mat1f epipolar_matcher::getObserved_depth_prior_variance() const
+{
+  return depth_prior_variance;
+}
 
 void epipolar_matcher::init_matrices(cv::Size size){
   observed_inverse_depth_variance = cv::Mat1f::zeros(size);
@@ -210,9 +217,10 @@ bool epipolar_matcher::compute_new_observation()
 
   cv::Point2d epipole_in_last_cv(epipole_in_last_pixel(0),epipole_in_last_pixel(1));
   cv::Point2d epipole_in_ref_cv(epipole_in_reference_pixel(0),epipole_in_reference_pixel(1));
-
+#ifdef DRAW
   cv::Mat overlay_last= cv::Mat::zeros(crt_pyramid.level(0).intensity.size(),crt_pyramid.level(0).intensity.type());
   cv::Mat overlay_ref= cv::Mat::zeros(crt_pyramid.level(0).intensity.size(),crt_pyramid.level(0).intensity.type());
+#endif
   observed_depth_crt.setTo(0);
   observed_inverse_depth_variance.setTo(0);
 
@@ -226,13 +234,14 @@ bool epipolar_matcher::compute_new_observation()
       float d_prior_close;
       float d_prior_far;
 
-      if(observed_depth_prior.at<float>(p)==0 || isnan(observed_depth_prior.at<float>(p))){
+      if(depth_prior.at<float>(p)==0 || isnan(depth_prior.at<float>(p)) ||
+         depth_prior_variance.at<float>(p)==0 || isnan(depth_prior_variance.at<float>(p))){
             d_prior_close = 1./CLOSE_INVERSE_DISTANCE;
             d_prior_far = 1./FAR_INVERSE_DISTANCE;
       }
       else{
-            d_prior_close = observed_depth_prior.at<float>(p) - 0.10;
-            d_prior_far   = observed_depth_prior.at<float>(p) + 0.10;
+            d_prior_close = depth_prior.at<float>(p) - 2*depth_prior_variance(p);
+            d_prior_far   = depth_prior.at<float>(p) + 2*depth_prior_variance(p);
       }
       cv::Point2d epipolar_close_ref = project_from_image_to_image(p,se3_ref_from_crt, d_prior_close);
       cv::Point2d epipolar_far_ref = project_from_image_to_image(p,se3_ref_from_crt, d_prior_far);
@@ -249,7 +258,7 @@ bool epipolar_matcher::compute_new_observation()
         observed_inverse_depth_variance(p) = 0;
         continue;
       }
-      else if(cv::norm(epipolar_close_ref-epipolar_far_ref) > 200)
+      else if(cv::norm(epipolar_close_ref-epipolar_far_ref) > 400)
       {
         observed_inverse_depth_variance(p) = 0;
         continue;
@@ -264,7 +273,7 @@ bool epipolar_matcher::compute_new_observation()
 
         observed_inverse_depth_variance(p) =  (variance < VARIANCE_MAX )? variance : 0;
       }
-      if(observed_depth_prior.at<float>(p) == 0 || isnan(observed_inverse_depth_variance(p))){
+      if(observed_inverse_depth_variance.at<float>(p) == 0 || isnan(observed_inverse_depth_variance(p))){
         continue;
       }
 
@@ -289,6 +298,7 @@ bool epipolar_matcher::compute_new_observation()
       //--------------------------------------------//
 
       if(bmatch==true){
+#ifdef DRAW
         //-------------------------------------//
         // On trace des épipolaires pour debug //
         //-------------------------------------//
@@ -298,6 +308,8 @@ bool epipolar_matcher::compute_new_observation()
               cv::line(overlay_ref,epipolar_close_ref,epipolar_far_ref,1);
               cv::circle(overlay_ref,match,8,Scalar(1));
               }
+#endif
+
           //---------------//
           // Triangulation //
           //---------------//
@@ -305,12 +317,13 @@ bool epipolar_matcher::compute_new_observation()
       }
     }
   }
-
+#ifdef DRAW
   cv::imshow("Variance",1./observed_inverse_depth_variance/10.);
   cv::imshow("Intensity",crt_pyramid.level(0).intensity/255 + overlay_last);
   cv::imshow("Intensity_Ref",ref_pyramid.level(0).intensity/255 + overlay_ref);
   //  cv::imshow("Intensity_dx",cv::abs(crt_pyramid.level(0).intensity_dx/64));
   //  cv::imshow("Intensity_dy",cv::abs(crt_pyramid.level(0).intensity_dy/64));
+#endif
   return true;
 }
 

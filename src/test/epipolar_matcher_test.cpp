@@ -30,7 +30,7 @@ void warp_forward(cv::Mat1f & to_warp,const cv::Mat1f & depth_mat, const Eigen::
   Eigen::Affine3d transformation = transformationx;
 
   cv::Mat warped_mat = cv::Mat::zeros(to_warp.size(), to_warp.type());
-  warped_mat.setTo(std::numeric_limits<float>::quiet_NaN());
+  warped_mat.setTo(0);
 
   float ox = intrinsics(0,2);
   float oy = intrinsics(1,2);
@@ -43,7 +43,7 @@ void warp_forward(cv::Mat1f & to_warp,const cv::Mat1f & depth_mat, const Eigen::
   {
     for(size_t x = 0; x < to_warp.cols; ++x, ++depth_ptr)
     {
-      if(!std::isfinite(*depth_ptr))
+      if(*depth_ptr==0)
       {
         continue;
       }
@@ -60,7 +60,7 @@ void warp_forward(cv::Mat1f & to_warp,const cv::Mat1f & depth_mat, const Eigen::
       {
         int yi = (int) y_projected, xi = (int) x_projected;
 
-        if(!std::isfinite(warped_mat.at<float>(yi, xi)) || (warped_mat.at<float>(yi, xi) - 0.05) > depth)
+        if(warped_mat.at<float>(yi, xi) == 0 || (warped_mat.at<float>(yi, xi) - 0.05) > depth)
           warped_mat.at<float>(yi, xi) = to_warp.at<float>(y,x);
       }
 
@@ -102,8 +102,8 @@ int main(int argc, char** argv)
 
   cv::Mat1f crtPrior = pyramidnew2.level(0).depth.clone();
   cv::Mat1f crtPrior_variance = 0.10 * (crtPrior.mul(crtPrior));
-  cv::Mat1f crtDepth_variance = crtPrior_variance;
-  cv::Mat1f crtDepth = crtPrior;
+  cv::Mat1f crtDepth_variance = crtPrior_variance.clone();
+  cv::Mat1f crtDepth = crtPrior.clone();
 
   Eigen::Affine3d cumul_t = Eigen::Affine3d::Identity();
   char k='\0';
@@ -139,10 +139,9 @@ while(true){
     warp_forward(crtDepth,crtDepth,t.inverse(), i.data.cast<double>());
     warp_forward(crtDepth_variance,crtDepth,t.inverse(), i.data.cast<double>());
 
-    cv::imshow("firstWarpedDepth",crtDepth);
-    cv::imshow("firstWarpedCovar",crtDepth_variance);
-    cv::waitKey(0);
     stereo_matcher.set_depth_prior(crtDepth);
+    stereo_matcher.set_depth_prior_variance(crtDepth_variance);
+
     stereo_matcher.push_new_data_in_buffer(std::move(pyramid),std::move(cumul_t));
 
     cumul_t = cumul_t * t;
@@ -152,17 +151,21 @@ while(true){
     cv::Mat obs(stereo_matcher.getObserved_depth_crt());
     cv::Mat obs_var(stereo_matcher.get_observed_variance());
     cv::Mat prior(stereo_matcher.getObserved_depth_prior());
+
+    //--------
+    // FUSION
+    //--------
     depth_ma_fusionner fusion(obs,obs_var,crtDepth,crtDepth_variance);
-    cv::Mat oldVar=crtDepth_variance;
+    cv::Mat oldVar = crtDepth_variance.clone();
     crtDepth = fusion.get_inverse_depth_posterior();
     crtDepth_variance = fusion.get_inverse_depth_posterior_variance();
 
+    //--------
+    // DISPLAY
+    //--------
     if(k == 'k'){
       cv::imshow("Prior",prior/5);
-//      cv::imshow("PriorVariance",crtDepth_variance*10);
-      //--------
-      // FUSION
-      //--------
+      cv::imshow("PriorVariance",crtDepth_variance*10);
       cv::imshow("Observation",obs/5);
       cv::imshow("ObservationVariance",obs_var*10);
       cv::imshow("depth",crtDepth/5);
@@ -177,11 +180,12 @@ while(true){
       // FUSION
       //--------
       cv::imshow("Prior",PriorNan);
+      cv::imshow("PriorVariance",PriorVar);
       cv::imshow("Observation",ObserNan);
       cv::imshow("ObservationVariance",ObsVarNan);
-      cv::imshow("PriorVariance",PriorVar);
       cv::imshow("depth",DepthNan);
     }
-    k=cv::waitKey(0);
+    k=cv::waitKey(20);
+    k='k';
   }
 }

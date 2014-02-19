@@ -26,11 +26,15 @@ public:
 
   cv::Mat1f getObserved_depth_prior() const;
 
+  cv::Mat1f getObserved_depth_prior_variance() const;
+  void set_depth_prior_variance(cv::Mat1f depth_variance);
 private:
   boost::circular_buffer< std::pair<dvo::core::RgbdImagePyramid,Eigen::Affine3d> >  last_images_buffer;
 
   cv::Mat1f observed_depth_crt;
-  cv::Mat1f observed_depth_prior;
+  cv::Mat1f depth_prior;
+  cv::Mat1f depth_prior_variance;
+
   cv::Mat1f observed_inverse_depth_variance;
 
   void init_matrices(cv::Size size);
