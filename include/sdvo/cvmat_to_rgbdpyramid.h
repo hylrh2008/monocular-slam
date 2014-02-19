@@ -16,7 +16,7 @@ public:
         intensity.convertTo(intensity,CV_32FC1);
         for (cv::MatIterator_<float> it = depth_float.begin<float>();  it != depth_float.end<float>(); ++it) {
             if(*it > 3 || *it == 0)
-              *it = std::numeric_limits<float>::quiet_NaN();
+              *it = 0;//std::numeric_limits<float>::quiet_NaN();
         }
 
         dvo::core::RgbdImagePyramid p(intensity,depth_float);

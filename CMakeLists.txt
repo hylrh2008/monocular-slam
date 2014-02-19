@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 2.8)
 ###########################
 
 # Where the resulting files will spawn.
-set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin"  )
-set(LIBRARY_OUTPUT_PATH    "${CMAKE_SOURCE_DIR}/lib"  )
+set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin-${CMAKE_BUILD_TYPE}"  )
+set(LIBRARY_OUTPUT_PATH    "${CMAKE_SOURCE_DIR}/lib-${CMAKE_BUILD_TYPE}"  )
 set(CMAKE_MODULE_PATH      "${CMAKE_SOURCE_DIR}/cmake")
 
 option(BUILD_TESTS "Build the tests." ON)
