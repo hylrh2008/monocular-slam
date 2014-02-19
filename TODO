@@ -12,13 +12,14 @@ Semi-Dense Visual Odometry:
            ✔ Photométrique @done (14-02-16 18:20)
            ✔ Conversion @done (14-02-16 18:20)
            ☐ Determiner les stddev des entrée: erreur sur l0 et erreur sur  l'intensité.
-         ☐ Parcourir ces lignes
+         ✔ Parcourir ces lignes @done (14-02-20 00:04)
          ✔ Calculer score SSD @done (14-02-16 18:21)
          ☐ Tester l'incertitude de triangulation
+         ☐ Ecrire la logique de choix de l'image de référence
 
-    ☐ Ecrire la logique de fusion bayésienne de l'information de profondeur
+    ✔ Ecrire la logique de fusion bayésienne de l'information de profondeur @done (14-02-20 00:04)
          ☐ La tester avec une odometry "parfaite" (image Kinect)
          ☐ La tester en vrai en série avec le tracking.
          ☐ En faire un autre thread?
-
+   ☐ Régulariser la carte après la fusion
    ☐ Modifier l'algorithme d'odométrie pour prendre en entrée un poids par pixel déterminé (Sa covariance!)
