@@ -2,6 +2,7 @@
 % q represents orientation in inertial frame
 clear all
 folder='../../dataset/rgbd_dataset_freiburg3_long_office_household/';
+folder_essai = '../../bin-Release/';
 [timestamp, t(:,1), t(:,2), t(:,3), q(:,1), q(:,2), q(:,3), q(:,4)] = ...
     extract_pos_from_algo([folder 'groundtruth.txt']);
 
@@ -10,7 +11,7 @@ folder='../../dataset/rgbd_dataset_freiburg3_long_office_household/';
 
 [timestamp_essai, relativ_trans_essai(:,1), relativ_trans_essai(:,2), relativ_trans_essai(:,3), ...
     relativ_quat_essai(:,1), relativ_quat_essai(:,2), relativ_quat_essai(:,3), relativ_quat_essai(:,4)] ...
-    = extract_pos_from_algo('../../bin/relativ_pose.txt');
+    = extract_pos_from_algo([folder_essai 'relativ_pose.txt' ]);
     
 [timestamp_literature, relativ_trans_literature(:,1), relativ_trans_literature(:,2), relativ_trans_literature(:,3), ...
     relativ_quat_literature(:,1), relativ_quat_literature(:,2), relativ_quat_literature(:,3), relativ_quat_literature(:,4)] ...
@@ -19,7 +20,7 @@ relativ_trans_literature = relativ_trans_literature - ones(length(relativ_trans_
 
 [timestamp_essai, t_essai(:,1), t_essai(:,2), t_essai(:,3), ...
     q_essai(:,1), q_essai(:,2), q_essai(:,3), q_essai(:,4)] ...
-    = extract_pos_from_algo('../../bin/pose.txt');
+    = extract_pos_from_algo([folder_essai 'pose.txt']);
 
 dt_ground_truth = diff(timestamp);
 dt_essai = diff(timestamp_essai);
