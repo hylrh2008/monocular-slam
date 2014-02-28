@@ -9,8 +9,8 @@ public:
                      const cv::Mat & _inverse_depth_prior,
                      const cv::Mat & _inverse_depth_prior_variance);
 
-  cv::Mat1f & get_inverse_depth_posterior(){return inverse_depth_posterior;}
-  cv::Mat1f & get_inverse_depth_posterior_variance(){return inverse_depth_posterior_variance;}
+  cv::Mat1f get_inverse_depth_posterior(){return inverse_depth_posterior;}
+  cv::Mat1f get_inverse_depth_posterior_variance(){return inverse_depth_posterior_variance;}
 
 private:
   cv::Mat1f  inverse_depth_observation;

@@ -61,59 +61,41 @@ depth_ma_fusionner::depth_ma_fusionner(const cv::Mat & _inverse_depth_observatio
   inverse_depth_posterior.setTo(cv::Scalar(0),mask_Nan);
   inverse_depth_posterior_variance.setTo(cv::Scalar(0),mask_Nan);*/
 
-  for (int c = 0; c < inverse_depth_observation.rows; ++c) {
-    for (int r = 0; r < inverse_depth_observation.cols; ++r) {
-      float obs=inverse_depth_observation(c,r);
-      float obsv=inverse_depth_observation_variance(c,r);
+  for (int r = 0; r < inverse_depth_observation.rows; ++r) {
+    for (int c = 0; c < inverse_depth_observation.cols; ++c) {
+      assert(inverse_depth_observation(r,c) >= 0);
+      assert(inverse_depth_observation_variance(r,c) >= 0);
+      assert(inverse_depth_prior(r,c) >= 0);
+      assert(inverse_depth_prior_variance(r,c) >= 0);
 
-      float prio = inverse_depth_prior(c,r);
-      float priov = inverse_depth_prior_variance(c,r);
-      bool observ_exist = obs != 0 && obsv != 0;
-      bool prior_exist = prio != 0 && priov != 0;
+      float obs=inverse_depth_observation(r,c);
+      float obsv=inverse_depth_observation_variance(r,c);
+
+      float prio = inverse_depth_prior(r,c);
+      float priov = inverse_depth_prior_variance(r,c);
+
+      bool observ_exist =  obs != 0 && obsv != 0  && std::isfinite(obs) && std::isfinite(obsv);
+      bool prior_exist = prio != 0 && priov != 0 && std::isfinite(prio) && std::isfinite(priov);
 
       if(!observ_exist && prior_exist){
-        inverse_depth_posterior(c,r) = prio;
-        inverse_depth_posterior_variance(c,r) = priov;
+        inverse_depth_posterior(r,c) = prio;
+        inverse_depth_posterior_variance(r,c) = priov;
       }
       else if(observ_exist && !prior_exist){
-        inverse_depth_posterior(c,r) = obs;
-        inverse_depth_posterior_variance(c,r) = obsv;
+        inverse_depth_posterior(r,c) = obs;
+        inverse_depth_posterior_variance(r,c) = obsv;
       }
 
       else if(!observ_exist && !prior_exist){
-        inverse_depth_posterior(c,r) = 0;
-        inverse_depth_posterior_variance(c,r) = 0;
+        inverse_depth_posterior(r,c) = 0;
+        inverse_depth_posterior_variance(r,c) = 0;
       }
       else if(observ_exist && prior_exist){
-        inverse_depth_posterior(c,r) = (priov * obs + obsv * prio)/(obsv + priov);
-        inverse_depth_posterior_variance(c,r) = (priov * obsv)/(obsv+priov);
+        inverse_depth_posterior(r,c) = (priov * obs + obsv * prio)/(obsv + priov);
+        inverse_depth_posterior_variance(r,c) = (priov * obsv)/(obsv+priov);
       }
-    }
-  }
-  cv::Mat1f tmp=inverse_depth_posterior.clone();
-  cv::Mat1f tmpv=inverse_depth_posterior_variance.clone();
-
-  for (int c = 1; c < inverse_depth_observation.rows-1; ++c) {
-    for (int r = 1; r < inverse_depth_observation.cols-1; ++r) {
-      float depth = tmp(c,r);
-      float depthv = tmpv(c,r);
-
-      if(abs(tmp(c-1,r+0)-depth) < 2*depthv && tmp(c-1,r+0)!=0 &&
-         abs(tmp(c+1,r+0)-depth) < 2*depthv && tmp(c+1,r+0)!=0 &&
-         abs(tmp(c+0,r+1)-depth) < 2*depthv && tmp(c-0,r+1)!=0 &&
-         abs(tmp(c+0,r-1)-depth) < 2*depthv && tmp(c-0,r-1)!=0)
-      {
-         inverse_depth_posterior(c,r) =
-             (1.f/tmpv(c-1,r+0)*tmp(c-1,r+0) + 1.f/tmpv(c+1,r+0)*tmp(c+1,r+0) +
-             1.f/tmpv(c-0,r+1)*tmp(c-0,r+1) +1.f/tmpv(c-0,r-1)*tmp(c-0,r-1))
-             /
-            (1.f/tmpv(c-1,r+0) + 1.f/tmpv(c+1,r+0) + 1.f/tmpv(c-0,r+1) + 1.f/tmpv(c-0,r-1));
-
-         inverse_depth_posterior_variance(c,r) =
-             1./(1.f/tmpv(c-1,r+0) + 1.f/tmpv(c+1,r+0) + 1.f/tmpv(c-0,r+1) + 1.f/tmpv(c-0,r-1));
-
-
-      }
+      assert(inverse_depth_posterior(r,c) >= 0);
+      assert(inverse_depth_posterior_variance(r,c) >= 0);
     }
   }
 }
