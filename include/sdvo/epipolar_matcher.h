@@ -14,27 +14,27 @@ public:
 
   bool compute_new_observation();
 
-  cv::Mat get_observed_depth() const;
 
-  cv::Mat get_observed_variance() const;
-
-  void set_depth_prior(cv::Mat1f depth);
+  void set_depth_prior(const cv::Mat1f & depth);
 
   void warp_depth_prior(Eigen::Affine3d t);
 
-  cv::Mat1f getObserved_depth_crt() const;
+  cv::Mat1f& getObserved_depth();
 
-  cv::Mat1f getObserved_depth_prior() const;
+  cv::Mat1f& getObserved_variance();
 
-  cv::Mat1f getObserved_depth_prior_variance() const;
-  void set_depth_prior_variance(cv::Mat1f depth_variance);
+  cv::Mat1f& getObserved_depth_prior();
+
+  cv::Mat1f& getObserved_depth_prior_variance();
+
+  void set_depth_prior_variance(const cv::Mat1f &depth_variance);
+
 private:
   boost::circular_buffer< std::pair<dvo::core::RgbdImagePyramid,Eigen::Affine3d> >  last_images_buffer;
 
   cv::Mat1f observed_depth_crt;
   cv::Mat1f depth_prior;
-  cv::Mat1f depth_prior_variance;
-
+  cv::Mat1f inverse_depth_prior_variance;
   cv::Mat1f observed_inverse_depth_variance;
 
   void init_matrices(cv::Size size);
@@ -42,7 +42,8 @@ private:
   double compute_error(const cv::Point2d & point,
                        const cv::Vec2d & epipole_direction,
                        double sigma_l, double sigma2_i,double alpha,
-                        dvo::core::RgbdImagePyramid &img);
+                       const cv::Mat1f & intensity_dx,
+                       const cv::Mat1f & intensity_dy);
 
   Eigen::Vector3d ProjectInZEqualOne(const Eigen::Vector4d & point);
 
@@ -63,11 +64,19 @@ private:
                                           const Eigen::Affine3d &se3_2_from_1,
                                           float distance);
 
-  void triangulate_and_populate_observation(const cv::Point2d & p,
+  bool triangulate_and_populate_observation(const cv::Point2d & p,
                                             const cv::Point2d & match,
                                             const Eigen::Affine3d & se3_ref_from_crt);
   bool b_matrices_inited;
+
+  //-------------------------------
+  // Some calibration variables
+  //-------------------------------
   Eigen::Matrix3d intrinsics_matrix;
+  float ox;
+  float oy;
+  float fx;
+  float fy;
 
 };
 
@@ -75,7 +84,7 @@ class epipolar_matcher_utils{
 public:
   static void mouseHandler(int event, int x, int y, int flags, void* t)
   {
-      std::cerr << x <<" "<< y <<" "<< ((epipolar_matcher*)t)->get_observed_depth().at<float>(y,x)<<std::endl;
+      std::cerr << x <<" "<< y <<" "<< ((epipolar_matcher*)t)->getObserved_depth().at<float>(y,x)<<std::endl;
   }
   static void mouseHandlerPrior(int event, int x, int y, int flags, void* t)
   {
@@ -83,7 +92,7 @@ public:
   }
   static void mouseHandlerVariance(int event, int x, int y, int flags, void* t)
   {
-      std::cerr << x <<" "<< y <<" "<<((epipolar_matcher*)t)->get_observed_variance().at<float>(y,x)<<std::endl;
+      std::cerr << x <<" "<< y <<" "<<((epipolar_matcher*)t)->getObserved_variance().at<float>(y,x)<<std::endl;
   }
 };
 }
