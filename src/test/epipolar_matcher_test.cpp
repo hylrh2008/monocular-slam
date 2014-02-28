@@ -6,6 +6,33 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <sdvo/depth_ma_fusionner.h>
 #include <sdvo/depth_map_regulariser.h>
+#include <pcl/visualization/cloud_viewer.h>
+
+pcl::visualization::CloudViewer viewer("Simple Cloud Viewer");
+void displayPointCloud (cv::Mat1f depth,Eigen::Matrix3d intrinsics,cv::Mat color)
+{
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+  for (int x = 0; x < depth.rows; ++x) {
+    for (int y = 0; y < depth.cols; ++y) {
+      if(depth(x,y) != 0){
+        Eigen::Vector3d v(x,y,1);
+
+        v[0]-=intrinsics(0,2);
+        v[0]/=intrinsics(0,0);
+
+        v[1]-=intrinsics(1,2);
+        v[1]/=intrinsics(1,1);
+
+        pcl::PointXYZRGB pt(color.at<cv::Vec3b>(x,y)[2],color.at<cv::Vec3b>(x,y)[1],color.at<cv::Vec3b>(x,y)[0]);
+        pt.x = -depth(x,y) * v[0];
+        pt.y =  depth(x,y) * v[1];
+        pt.z =  depth(x,y);
+        cloud->push_back(pt);
+      }
+    }
+  }
+  viewer.showCloud(cloud);
+}
 std::string test_directory;
 std::string data_path;
 using namespace sdvo;
@@ -377,6 +404,7 @@ int main(int argc, char** argv)
     cv::imshow("depth",coloredDepth);
     cv::imshow("depthVariance",coloredDepthVariance);
 
+    displayPointCloud (crt_depth,i.data.cast<double>(),coloredDepthVariance);
 
     k = cv::waitKey(2);
   }
