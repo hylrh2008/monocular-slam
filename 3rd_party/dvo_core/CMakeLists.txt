@@ -5,6 +5,7 @@ project(dvo)
 find_package(VTK REQUIRED)
 include_directories(${VTK_INCLUDE_DIRS})
 
+
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
    "${SSE_FLAGS} -O3 -march=native"
 )
@@ -26,5 +27,8 @@ file(GLOB HEADER
   #"include/dvo/visualization/*.h*"
 )
 
+find_package("OpenCV" REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
 add_library(${PROJECT_NAME} ${SOURCE} ${HEADER})
-target_link_libraries(${PROJECT_NAME} tbb boost_thread)
+target_link_libraries(${PROJECT_NAME} tbb boost_thread  ${OpenCV_LIBRARIES})

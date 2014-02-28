@@ -3,7 +3,7 @@
 
 #include <string>
 #include <set>
-
+#include <map>
 #include <sdvo/image_input.h>
 
 

@@ -23,3 +23,6 @@ Semi-Dense Visual Odometry:
          ☐ En faire un autre thread?
    ☐ Régulariser la carte après la fusion
    ☐ Modifier l'algorithme d'odométrie pour prendre en entrée un poids par pixel déterminé (Sa covariance!)
+   ☐ Optimiser ce qui peut l'être
+   ✔ Paramétriser en inverse depth. @done (14-02-25 22:30)
+   ☐ Gerer la propagation de la variance de facon plus précise
