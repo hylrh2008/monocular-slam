@@ -282,17 +282,41 @@ bool epipolar_matcher::compute_new_observation()
       //---------------------------------------------------------------//
       // Parcours de l'épipolaire pour trouver un match dans référence //
       //---------------------------------------------------------------//
-      bool bmatch=false;
-      SSD_Subpixel_Matcher_Over_Line line_matcher(crt_pyramid.level(0).intensity,
-                                                  ref_pyramid.level(0).intensity,
-                                                  p,
-                                                  epipolar_close_ref,
-                                                  epipolar_far_ref,
-                                                  epipole_direction_ref,
-                                                  epipole_direction_crt,1);
-      double error = line_matcher.match();
+      bool bmatch = false;
+
+
+      cv::LineIterator line_it(ref_pyramid.level(0).intensity,
+                               epipolar_close_ref,
+                               epipolar_far_ref,
+                               4
+                               );
+
+      float intensity_crt = crt_pyramid.level(0).intensity.at<float>(p);
+
+      float error = INFINITY;
+      cv::Point2d match;
+
+      for (int i = 0; i < line_it.count; ++i, line_it++)
+      {
+        float intensity_ref = ref_pyramid.level(0).intensity.at<float>(line_it.pos());
+        cv::Point2d pos_line=(line_it.pos());
+        if(std::abs(intensity_ref-intensity_crt) <= SEUIL_DIFF_PIXEL_FOR_SSD){
+
+          SSD_Subpixel_Matcher_Over_Line line_matcher(crt_pyramid.level(0).intensity,
+                                                      ref_pyramid.level(0).intensity,
+                                                      p,
+                                                      pos_line - 0.5 * cv::Point2d(epipole_direction_ref),
+                                                      pos_line + 0.5 * cv::Point2d(epipole_direction_ref),
+                                                      epipole_direction_ref,
+                                                      epipole_direction_crt,0.2,5);
+
+          if(line_matcher.get_error() < error){
+            error = line_matcher.get_error();
+            match = line_matcher.getMatch_point();
+          }
+        }
+      }
       if(error<SEUIL_ERROR_SSD) bmatch=true;
-      cv::Point2d match = line_matcher.getMatch_point();
       //--------------------------------------------//
       // On a trouvé un match il reste à trianguler //
       //--------------------------------------------//
