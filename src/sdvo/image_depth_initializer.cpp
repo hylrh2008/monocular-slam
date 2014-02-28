@@ -20,8 +20,8 @@ std::pair<cv::Mat, cv::Mat> image_depth_initializer::get_init()
 {
   std::pair<cv::Mat, cv::Mat> result;
 
-  result.first = cv::imread(_rgb, CV_LOAD_IMAGE_COLOR);
-  cv::Mat tmp = cv::imread(_depth, CV_LOAD_IMAGE_GRAYSCALE);
+  result.first = cv::imread(_rgb, cv::IMREAD_COLOR);
+  cv::Mat tmp = cv::imread(_depth, cv::IMREAD_GRAYSCALE);
   tmp.convertTo(result.second, CV_32FC1, _scale_factor);
 }
 

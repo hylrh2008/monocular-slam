@@ -10,8 +10,8 @@ class tracker_with_depth
 {
 public:
   tracker_with_depth(const std::string & dataset_folder):
-    rgb_source(dataset_folder + "/rgb/", "", ".png",CV_LOAD_IMAGE_COLOR),
-    depth_source(dataset_folder + "/depth/", "", ".png",CV_LOAD_IMAGE_ANYDEPTH),
+    rgb_source(dataset_folder + "/rgb/", "", ".png",cv::IMREAD_ANYCOLOR),
+    depth_source(dataset_folder + "/depth/", "", ".png",cv::IMREAD_ANYDEPTH),
     create_rgbdpyramid()
   {
 
@@ -41,19 +41,16 @@ public:
     sdvo::logger logger_relative(log_relative);
 
     dvo::core::IntrinsicMatrix intrinsic =
-        dvo::core::IntrinsicMatrix::create(517.3,516.5,318.6,255.3);
-        //dvo::core::IntrinsicMatrix::create(535.4,	 539.2,	 320.1,	 247.6);
+        //dvo::core::IntrinsicMatrix::create(517.3,516.5,318.6,255.3);
+        dvo::core::IntrinsicMatrix::create(535.4,	 539.2,	 320.1,	 247.6);
     dvo::DenseTracker::Config cfg = dvo::DenseTracker::getDefaultConfig();
     cfg.Lambda = 5E-3;
     cfg.MaxIterationsPerLevel=100;
     cfg.UseWeighting=true;
     cfg.Precision=1E-7;
     cfg.UseInitialEstimate=false;
-
-
-
-
     dvo::DenseTracker tracker(intrinsic,cfg);
+
     cv::Mat rgb;
     cv::Mat depth;
     std::string rgb_filename = rgb_source.get_current_file_name();
@@ -67,8 +64,8 @@ public:
     timeval end;
     Eigen::Affine3d cumulated_transform(Eigen::Affine3d::Identity());
     cumulated_transform = static_cast<Eigen::Affine3d>(
-          Eigen::Quaterniond(-0.3248,0.6574,0.6126,-0.2949)
-          //Eigen::Quaterniond( -0.0145,0.0003, 0.8617, -0.5072)
+          //Eigen::Quaterniond(-0.3248,0.6574,0.6126,-0.2949)
+          Eigen::Quaterniond( -0.0145,0.0003, 0.8617, -0.5072)
           );
     Eigen::Affine3d last_transform=cumulated_transform;
 

@@ -18,7 +18,7 @@ TEST(file_stream_input_image, browse_files_in_lexical_order)
   ASSERT_FALSE(test_directory.empty());
   std::cout << "test_directory: " << test_directory << std::endl;
   std::string basename = "test";
-  file_stream_input_image input(test_directory, basename, "png", CV_LOAD_IMAGE_ANYCOLOR);
+  file_stream_input_image input(test_directory, basename, "png", cv::IMREAD_ANYCOLOR);
   std::stringstream ss_input, ss_ref;
   input.print_remaining_files(ss_input);
 
@@ -52,7 +52,7 @@ TEST(file_stream_input_image, display_test)
   if (data_path.empty()) return;
   std::cout << "data_path: " << data_path << std::endl;
 
-  file_stream_input_image input(data_path, "", ".png", CV_LOAD_IMAGE_ANYCOLOR);
+  file_stream_input_image input(data_path, "", ".png", cv::IMREAD_ANYCOLOR);
 
   while (true)
   {
