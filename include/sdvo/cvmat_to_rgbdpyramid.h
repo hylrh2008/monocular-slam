@@ -7,12 +7,13 @@ namespace sdvo{
 class cvmat_to_rhbdpyramid
 {
 public:
-    dvo::core::RgbdImagePyramid operator ()(const cv::Mat & rgb,const cv::Mat & depth)
+    typedef enum {TUMDATASET,FLOAT_MAP} DepthSource;
+    dvo::core::RgbdImagePyramid operator ()(const cv::Mat & rgb,const cv::Mat & depth,DepthSource src = FLOAT_MAP)
     {
         cv::Mat intensity;
         cv::Mat depth_float;
         cv::cvtColor(rgb,intensity,cv::COLOR_RGB2GRAY);
-        depth.convertTo(depth_float,CV_32FC1,1/5000.);
+        depth.convertTo(depth_float,CV_32FC1, (src==TUMDATASET)? 1/5000. : 1);
         intensity.convertTo(intensity,CV_32FC1);
         for (cv::MatIterator_<float> it = depth_float.begin<float>();  it != depth_float.end<float>(); ++it) {
             if(*it > 5 || *it == 0)
