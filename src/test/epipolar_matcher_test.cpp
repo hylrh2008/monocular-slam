@@ -7,8 +7,8 @@
 #include <sdvo/depth_ma_fusionner.h>
 #include <sdvo/depth_map_regulariser.h>
 #include <sdvo/depth_hypothesis.h>
+#ifdef _ENABLE_PCL
 #include <pcl/visualization/cloud_viewer.h>
-
 pcl::visualization::CloudViewer viewer("Simple Cloud Viewer");
 void displayPointCloud (cv::Mat1f depth,Eigen::Matrix3d intrinsics,cv::Mat color)
 {
@@ -35,7 +35,7 @@ void displayPointCloud (cv::Mat1f depth,Eigen::Matrix3d intrinsics,cv::Mat color
 
   viewer.showCloud(cloud);
 }
-
+#endif
 std::string test_directory;
 std::string data_path;
 using namespace sdvo;
@@ -252,8 +252,9 @@ int main(int argc, char** argv)
     cv::imshow("depth",coloredDepth+id);
 
     cv::imshow("depthVariance",coloredDepthVariance);
+#ifdef _ENABLE_PCL
     displayPointCloud (H.d,i.data.cast<double>(),coloredDepthVariance);
-
+#endif
     k = cv::waitKey(2);
   }
 }
