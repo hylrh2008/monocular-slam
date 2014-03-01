@@ -80,7 +80,20 @@ int main(int argc, char** argv)
   dvo::core::RgbdImagePyramid pyramid = create_rgbdpyramid(rgb,depth,cvmat_to_rhbdpyramid::TUMDATASET);
   dvo::core::RgbdImagePyramid pyramidnew = create_rgbdpyramid(rgbnew,depthground,cvmat_to_rhbdpyramid::TUMDATASET);
   dvo::core::RgbdImagePyramid pyramidnew2 = pyramidnew;
+  for (int x = 0; x < depth.cols; ++x) {
+    for (int y = 0; y < depth.rows; ++y) {
+      if(
+         pyramidnew2.level(0).intensity_dx.at<float>(y,x) * pyramidnew2.level(0).intensity_dx.at<float>(y,x)
+          +
+         pyramidnew2.level(0).intensity_dy.at<float>(y,x) * pyramidnew2.level(0).intensity_dy.at<float>(y,x)
+         < 30){
+        pyramid.level(0).depth.at<float>(y,x)=0;
+        pyramidnew.level(0).depth.at<float>(y,x)=0;
+        pyramidnew2.level(0).depth.at<float>  (y,x)=0;
 
+      }
+    }
+  }
   dvo::core::IntrinsicMatrix i =
       //dvo::core::IntrinsicMatrix::create(517.3,516.5,318.6,255.3); //fr1
       dvo::core::IntrinsicMatrix::create(535.4,539.2,320.1,247.6); //fr3
@@ -93,6 +106,7 @@ int main(int argc, char** argv)
   dvo::DenseTracker tracker(i,cfg);
 
   epipolar_matcher stereo_matcher(i.data.cast<double>());
+
   cv::setMouseCallback("Observation",epipolar_matcher_utils::mouseHandler,(void*) &stereo_matcher);
   cv::setMouseCallback("Prior",epipolar_matcher_utils::mouseHandlerPrior,(void*) &stereo_matcher);
   cv::setMouseCallback("Variance",epipolar_matcher_utils::mouseHandlerVariance,(void*) &stereo_matcher);
@@ -105,6 +119,7 @@ int main(int argc, char** argv)
                            i.fy(),
                            i.ox(),
                            i.oy());
+
 
   Eigen::Affine3d cumul_t = Eigen::Affine3d::Identity();
   Eigen::Affine3d cumul_t_since_last = Eigen::Affine3d::Identity();
@@ -128,7 +143,7 @@ int main(int argc, char** argv)
       rgbnew = rgb_source.get_next_image();
     }
 
-    if(0){
+    if(1){
       depthnew = depthground;
       pyramidnew  = create_rgbdpyramid(rgbnew,depthnew,
                                        sdvo::cvmat_to_rhbdpyramid::TUMDATASET);
@@ -165,22 +180,35 @@ int main(int argc, char** argv)
 
     if(norm < 0.02){
       H.regularise_hypothesis();
+      for (int x = 0; x < H.d.cols; ++x) {
+        for (int y = 0; y < H.d.rows; ++y) {
+          if(
+             pyramidnew2.level(0).intensity_dx.at<float>(y,x) * pyramidnew2.level(0).intensity_dx.at<float>(y,x)
+             +
+             pyramidnew2.level(0).intensity_dy.at<float>(y,x) * pyramidnew2.level(0).intensity_dy.at<float>(y,x)
+             < 100){
+            H.outlier_probability(y,x)++;
+          }
+          assert(H.d(y,x)>=0);
+          assert(H.var(y,x)>=0);
+        }
+      }
     }
     else
     {
-      stereo_matcher.set_depth_prior(H.d);
-      stereo_matcher.set_depth_prior_variance(H.variance);
 
+      stereo_matcher.set_depth_prior(H.d);
+      stereo_matcher.set_depth_prior_variance(H.var);
+      stereo_matcher.set_pixel_age(H.age);
       stereo_matcher.push_new_data_in_buffer(std::move(pyramid),
                                              std::move(cumul_t));
       stereo_matcher.compute_new_observation();
       cumul_t_since_last = Eigen::Affine3d::Identity();
 
-      cv::Mat obs(stereo_matcher.getObserved_depth());
-      cv::Mat obs_var(stereo_matcher.getObserved_variance());
-      cv::Mat prior(stereo_matcher.getObserved_depth_prior());
-      cv::Mat oldVar = H.variance.clone();
-
+      cv::Mat obs(stereo_matcher.get_observed_depth());
+      cv::Mat obs_var(stereo_matcher.get_observed_variance());
+      cv::Mat prior(stereo_matcher.get_depth_prior());
+      cv::Mat oldVar = H.var.clone();
       //--------
       // FUSION
       //--------
@@ -190,16 +218,15 @@ int main(int argc, char** argv)
              pyramidnew2.level(0).intensity_dx.at<float>(y,x) * pyramidnew2.level(0).intensity_dx.at<float>(y,x)
              +
              pyramidnew2.level(0).intensity_dy.at<float>(y,x) * pyramidnew2.level(0).intensity_dy.at<float>(y,x)
-             < 10){
-            H.d(y,x) = 0;
-            H.variance(y,x) = 0;
-            H.precise_position(y,x).zeros();
+             < 100){
+            H.outlier_probability(y,x)++;
           }
           assert(H.d(y,x)>=0);
-          assert(H.variance(y,x)>=0);
+          assert(H.var(y,x)>=0);
         }
       }
-      H.check_gradient_norm();
+
+      //H.check_gradient_norm();
       H.add_observation_to_hypothesis(obs,obs_var);
 
 
@@ -240,7 +267,7 @@ int main(int argc, char** argv)
         cv::imshow("depth",DepthNan);
       }
     }
-    cv::Mat coloredDepthVariance = colorised_variance(H.variance);
+    cv::Mat coloredDepthVariance = colorised_variance(H.var);
     cv::Mat coloredDepth = colorised_depth(H.d);
     cv::Mat mask(H.d!=0);
     cv::Mat id(rgbnew);
@@ -249,9 +276,14 @@ int main(int argc, char** argv)
     coloredDepth.setTo(cv::Vec3d::zeros(),~mask);
     coloredDepthVariance.setTo(cv::Vec3d::zeros(),~mask);
 
-    cv::imshow("depth",coloredDepth+id);
+    cv::Mat coloredAge;
+    cv::Mat maskAge(H.age != 0);
+    cv::applyColorMap((H.age+1)/10*255,coloredAge,cv::COLORMAP_RAINBOW);
+    coloredAge.setTo(0,~maskAge);
 
+    cv::imshow("depth",coloredDepth+id);
     cv::imshow("depthVariance",coloredDepthVariance);
+    cv::imshow("age",coloredAge);
 #ifdef _ENABLE_PCL
     displayPointCloud (H.d,i.data.cast<double>(),coloredDepthVariance);
 #endif

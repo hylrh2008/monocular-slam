@@ -66,25 +66,44 @@ epipolar_matcher::epipolar_matcher(const Eigen::Matrix3d &_intrinsics_matrix):
   fy = intrinsics_matrix(1,1);
 }
 
-void epipolar_matcher::set_depth_prior(const Mat1f &depth){
+void epipolar_matcher::set_depth_prior(const Mat1f &depth)
+{
   depth_prior = depth;
 }
-void epipolar_matcher::set_depth_prior_variance(const cv::Mat1f & depth_variance){
+
+void epipolar_matcher::set_pixel_age(const Mat1b &age)
+{
+  pixel_age = age;
+}
+
+void
+epipolar_matcher::set_depth_prior_variance(const cv::Mat1f & depth_variance){
   inverse_depth_prior_variance = depth_variance;
 }
-Mat1f & epipolar_matcher::getObserved_depth()
+
+Mat1b & epipolar_matcher::get_pixel_age()
+{
+  return pixel_age;
+}
+
+Mat1f & epipolar_matcher::get_observed_depth()
 {
   return observed_depth_crt;
 }
 
-cv::Mat1f & epipolar_matcher::getObserved_depth_prior()
+cv::Mat1f & epipolar_matcher::get_depth_prior()
 {
   return depth_prior;
 }
 
-cv::Mat1f & epipolar_matcher::getObserved_depth_prior_variance()
+cv::Mat1f & epipolar_matcher::get_depth_prior_variance()
 {
   return inverse_depth_prior_variance;
+}
+
+cv::Mat1f & epipolar_matcher::get_observed_variance()
+{
+  return observed_inverse_depth_variance;
 }
 
 void epipolar_matcher::init_matrices(cv::Size size){
@@ -136,6 +155,7 @@ bool epipolar_matcher::push_new_data_in_buffer(dvo::core::RgbdImagePyramid && py
                                                Eigen::Affine3d && transform_from_start)
 {
   if(!b_matrices_inited) init_matrices(pyr.level(0).intensity.size());
+  if(last_images_buffer.full()) pixel_age = pixel_age - 1;
   last_images_buffer.push_back(
         std::make_pair<dvo::core::RgbdImagePyramid,Eigen::Affine3d>(
           std::forward<dvo::core::RgbdImagePyramid>(pyr),
@@ -194,6 +214,8 @@ epipolar_matcher::triangulate_and_populate_observation(const cv::Point2d & p,
 
 bool epipolar_matcher::compute_new_observation()
 {
+  int ref_age = 0;
+
   dvo::core::RgbdImagePyramid & crt_pyramid = last_images_buffer.back().first;
   const Eigen::Affine3d & se3_world_from_crt = last_images_buffer.back().second;
 
@@ -230,9 +252,9 @@ bool epipolar_matcher::compute_new_observation()
   for(boost::circular_buffer< std::pair<dvo::core::RgbdImagePyramid,Eigen::Affine3d> >::iterator ref_it = last_images_buffer.begin();
       !next_pixel_to_compute.empty() &&
       ref_it!=last_images_buffer.end()-1
-      //&& ref_it!=last_images_buffer.begin() +1 // On bloque a une image
+      //&& ref_it!=last_images_buffer.begin() + 5  // On bloque
       ;
-      ref_it++){
+      ref_it++,ref_age++){
 
     std::swap (pixel_to_compute,next_pixel_to_compute);
 
@@ -262,19 +284,24 @@ bool epipolar_matcher::compute_new_observation()
     while(!pixel_to_compute.empty()) {
       cv::Point2d p = cv::Point2d(pixel_to_compute.front());
       pixel_to_compute.pop();
-
+      // On rejette les pixels qui sont trop vieux (Attention age est inversé en fait)
+      if(ref_age < pixel_age(p)){
+        next_pixel_to_compute.push(p);
+        continue;
+      }
       float d_prior_close;
       float d_prior_far;
-
+      bool newH;
       if(depth_prior(p)==0 || isnan(depth_prior(p)) ||
          inverse_depth_prior_variance.at<float>(p) == 0 || isnan(inverse_depth_prior_variance.at<float>(p))){
         d_prior_close = CLOSE_DISTANCE;
         d_prior_far = FAR_DISTANCE;
-
+        newH=true;
       }
       else{
         d_prior_close = 1./(1./depth_prior(p) + 2 * inverse_depth_prior_variance(p));
         d_prior_far   = 1./(1./depth_prior(p) - 2 * inverse_depth_prior_variance(p));
+        newH=false;
       }
       //      if(int(p.y) % 10 == 0 && int(p.x) % 10== 0 && inverse_depth_prior_variance(p)>0.005){
       //        cerr<<"Hypothesis:\tVariance= "<<inverse_depth_prior_variance(p)
@@ -390,6 +417,9 @@ bool epipolar_matcher::compute_new_observation()
           next_pixel_to_compute.push(p);
           continue;
         }
+        else if(newH){
+          pixel_age(p)= ref_age;
+        }
       }
     }
   }
@@ -405,10 +435,5 @@ bool epipolar_matcher::compute_new_observation()
   cv::imshow("Intensity_dy",cv::abs(crt_pyramid.level(0).intensity_dy/64));
 #endif
   return true;
-}
-
-cv::Mat1f & epipolar_matcher::getObserved_variance()
-{
-  return observed_inverse_depth_variance;
 }
 }

@@ -19,23 +19,26 @@ public:
 
   void warp_depth_prior(Eigen::Affine3d t);
 
-  cv::Mat1f& getObserved_depth();
+  cv::Mat1f& get_observed_depth();
+  cv::Mat1f& get_observed_variance();
 
-  cv::Mat1f& getObserved_variance();
+  cv::Mat1f& get_depth_prior();
 
-  cv::Mat1f& getObserved_depth_prior();
-
-  cv::Mat1f& getObserved_depth_prior_variance();
-
+  cv::Mat1f& get_depth_prior_variance();
   void set_depth_prior_variance(const cv::Mat1f &depth_variance);
+
+  cv::Mat1b & get_pixel_age();
+  void set_pixel_age(const cv::Mat1b & age);
 
 private:
   boost::circular_buffer< std::pair<dvo::core::RgbdImagePyramid,Eigen::Affine3d> >  last_images_buffer;
 
   cv::Mat1f observed_depth_crt;
+  cv::Mat1f observed_inverse_depth_variance;
+
   cv::Mat1f depth_prior;
   cv::Mat1f inverse_depth_prior_variance;
-  cv::Mat1f observed_inverse_depth_variance;
+  cv::Mat1b pixel_age;
 
   void init_matrices(cv::Size size);
 
@@ -84,15 +87,15 @@ class epipolar_matcher_utils{
 public:
   static void mouseHandler(int event, int x, int y, int flags, void* t)
   {
-      std::cerr << x <<" "<< y <<" "<< ((epipolar_matcher*)t)->getObserved_depth().at<float>(y,x)<<std::endl;
+      std::cerr << x <<" "<< y <<" "<< ((epipolar_matcher*)t)->get_observed_depth().at<float>(y,x)<<std::endl;
   }
   static void mouseHandlerPrior(int event, int x, int y, int flags, void* t)
   {
-      std::cerr << x <<" "<< y <<" "<< ((epipolar_matcher*)t)->getObserved_depth_prior().at<float>(y,x)<<std::endl;
+      std::cerr << x <<" "<< y <<" "<< ((epipolar_matcher*)t)->get_depth_prior().at<float>(y,x)<<std::endl;
   }
   static void mouseHandlerVariance(int event, int x, int y, int flags, void* t)
   {
-      std::cerr << x <<" "<< y <<" "<<((epipolar_matcher*)t)->getObserved_variance().at<float>(y,x)<<std::endl;
+      std::cerr << x <<" "<< y <<" "<<((epipolar_matcher*)t)->get_observed_variance().at<float>(y,x)<<std::endl;
   }
 };
 }
