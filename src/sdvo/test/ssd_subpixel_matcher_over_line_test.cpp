@@ -28,7 +28,7 @@ TEST(ssd_subpixel_matcher_over_line, ssd_subpixel_matcher_over_line_test_diag)
                                              cv::Vec2d(sqrt(2)/2.,sqrt(2)/2.),
                                              cv::Vec2d(sqrt(2)/2.,sqrt(2)/2.),
                                              0.1);
-  double error = ssd_matcher.get_error();
+  double error = ssd_matcher.get_error2();
   cv::Point2d match = ssd_matcher.getMatch_point();
   std::cout<<error<<" "<<match<<std::endl;
   ASSERT_TRUE(abs(match.y-5)<2 && abs(match.x-5)<2);
@@ -46,7 +46,7 @@ TEST(ssd_subpixel_matcher_over_line, ssd_subpixel_matcher_over_line_test_vertica
                                              cv::Point2d(0,4),
                                              cv::Point2d(0,0),cv::Point2d(0,8),
                                              cv::Vec2d(0,1),cv::Vec2d(0,1));
-  double error = ssd_matcher.get_error();
+  double error = ssd_matcher.get_error2();
   cv::Point2d match = ssd_matcher.getMatch_point();
   std::cout<<error<<" "<<match<<std::endl;
   ASSERT_TRUE(abs(match.y-5)<1 && abs(match.x)<1);
@@ -65,7 +65,7 @@ TEST(ssd_subpixel_matcher_over_line, ssd_subpixel_matcher_over_line_test_horizon
                                              cv::Point2d(0,0),cv::Point2d(8,0),
                                              cv::Vec2d(1,0),cv::Vec2d(1,0),
                                              0.2);
-  double error = ssd_matcher.get_error();
+  double error = ssd_matcher.get_error2();
   cv::Point2d match = ssd_matcher.getMatch_point();
   std::cout<<error<<" "<<match<<std::endl;
   ASSERT_TRUE(abs(match.y)<1 && abs(match.x-5)<1);

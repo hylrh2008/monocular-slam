@@ -142,7 +142,7 @@ SSD_Subpixel_Matcher_Over_Line::SSD_Subpixel_Matcher_Over_Line(const cv::Mat & _
   }
   crt_write_index = ssd_window_size;
 
-  error = match();
+  error2 = match();
 }
 
 float SSD_Subpixel_Matcher_Over_Line::match(){

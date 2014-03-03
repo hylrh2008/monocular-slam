@@ -16,11 +16,11 @@ using namespace cv;
 #define CLOSE_DISTANCE 0.5
 #define FAR_DISTANCE 150
 #define VARIANCE_MAX 0.02
-#define SEUIL_ERROR_SSD 9
-#define SEUIL_DIFF_PIXEL_FOR_SSD 4
 #define SIGMA_I 8
 #define SIGMA_L 50
 #define LENGTH_EPIPOLAR_MAX 200
+#define SEUIL_ERROR2_SSD 64
+#define SEUIL_DIFF_PIXEL_FOR_SSD 5
 #define GRADIENT2_MIN 40
 #define BUFFER_LENGTH 5
 #define DRAW
@@ -367,24 +367,38 @@ bool epipolar_matcher::compute_new_observation()
       for (int i = 0; i < line_it.count; ++i, line_it++)
       {
         float intensity_ref = ref_pyramid.level(0).intensity.at<float>(line_it.pos());
-        cv::Point2d pos_line=(line_it.pos());
         if(std::abs(intensity_ref-intensity_crt) <= SEUIL_DIFF_PIXEL_FOR_SSD){
+          cv::Point2d pos_line=(line_it.pos());
 
           SSD_Subpixel_Matcher_Over_Line line_matcher(crt_pyramid.level(0).intensity,
                                                       ref_pyramid.level(0).intensity,
                                                       p,
-                                                      pos_line - 0.5 * cv::Point2d(epipole_direction_ref),
-                                                      pos_line + 0.5 * cv::Point2d(epipole_direction_ref),
+                                                      pos_line - 5 * cv::Point2d(epipole_direction_ref),
+                                                      pos_line + 5 * cv::Point2d(epipole_direction_ref),
                                                       epipole_direction_ref,
-                                                      epipole_direction_crt,0.2,5);
+                                                      epipole_direction_crt,1,5);
 
-          if(line_matcher.get_error() < error){
-            error = line_matcher.get_error();
+          if(line_matcher.get_error2() < error){
+            error = line_matcher.get_error2();
             match = line_matcher.getMatch_point();
           }
+          //ESSAI DANS LAUTRE SENS
+          SSD_Subpixel_Matcher_Over_Line line_matcher2(crt_pyramid.level(0).intensity,
+                                                      ref_pyramid.level(0).intensity,
+                                                      p,
+                                                      pos_line + 5 * cv::Point2d(epipole_direction_ref),
+                                                      pos_line - 5 * cv::Point2d(epipole_direction_ref),
+                                                      -epipole_direction_ref,
+                                                      epipole_direction_crt,1,5);
+
+          if(line_matcher2.get_error2() < error){
+            error = line_matcher2.get_error2();
+            match = line_matcher2.getMatch_point();
+          }
         }
+
       }
-      if(error<SEUIL_ERROR_SSD) bmatch=true;
+      if(error < SEUIL_ERROR2_SSD) bmatch=true;
       //--------------------------------------------//
       // On a trouvé un match il reste à trianguler //
       //--------------------------------------------//

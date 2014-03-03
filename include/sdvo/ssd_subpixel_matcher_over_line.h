@@ -15,11 +15,11 @@ public:
                                  const cv::Vec2f &_direction_in_img,
                                  float step=1, int size = 5);
   cv::Point2f getMatch_point() const;
-  float get_error(){ return error;}
+  float get_error2(){ return error2;}
 private:
   int ssd_window_size;
   float step;
-  float error;
+  float error2; //Mean Square Error
 
   const cv::Mat & img;
 
