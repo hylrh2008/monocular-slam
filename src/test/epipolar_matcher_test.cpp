@@ -7,11 +7,21 @@
 #include <sdvo/depth_ma_fusionner.h>
 #include <sdvo/depth_map_regulariser.h>
 #include <sdvo/depth_hypothesis.h>
+
 #ifdef _ENABLE_PCL
 #include <pcl/visualization/cloud_viewer.h>
-pcl::visualization::CloudViewer viewer("Simple Cloud Viewer");
-void displayPointCloud (cv::Mat1f depth,Eigen::Matrix3d intrinsics,cv::Mat color)
+#include <pcl/visualization/pcl_visualizer.h>
+#include <iostream>
+//pcl::visualization::CloudViewer viewer("Simple Cloud Viewer");
+boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+
+void displayPointCloud (const cv::Mat1f & depth, const Eigen::Matrix3d & intrinsics,const cv::Mat3b & color,const cv::Mat1f & var)
 {
+  viewer->setBackgroundColor (0, 0, 0);
+  viewer->resetStoppedFlag();
+  viewer->removePointCloud("sample cloud");
+  viewer->removeAllShapes();
+  std::ostringstream s;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
   for (int x = 0; x < depth.rows; ++x) {
     for (int y = 0; y < depth.cols; ++y) {
@@ -29,11 +39,42 @@ void displayPointCloud (cv::Mat1f depth,Eigen::Matrix3d intrinsics,cv::Mat color
         pt.y =  depth(x,y) * v[1];
         pt.z =  depth(x,y);
         cloud->push_back(pt);
+
+        if( x % 4 == 0 && y % 4 == 0){
+
+          float d_min = 1./ (1./depth(x,y) + 2 * var(x,y));
+          float d_max = 1./ (1./depth(x,y) - 2 * var(x,y));
+          if(d_max<0 || d_max>100) d_max = 100;
+
+          if(var(x,y) > 0.005){
+            pcl::PointXYZRGB pt1(128,128,128);
+            pt1.x = -d_min * v[0];
+            pt1.y =  d_min * v[1];
+            pt1.z =  d_min;
+            pcl::PointXYZRGB pt2(128,128,128);
+            pt2.x = -d_max * v[0];
+            pt2.y =  d_max * v[1];
+            pt2.z =  d_max;
+            s.str("");
+            s<<x<<" "<<y;
+            viewer->addLine<pcl::PointXYZRGB> (pt1,pt2,s.str());
+          }
+        }
       }
     }
   }
+  pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(cloud);
 
-  viewer.showCloud(cloud);
+  viewer->addPointCloud<pcl::PointXYZRGB> (cloud, rgb, "sample cloud");
+  viewer->addCoordinateSystem(0.1);
+  //  viewer->initCameraParameters();
+
+  while(!viewer->wasStopped())
+  {
+    viewer->spinOnce (10);
+    boost::this_thread::sleep (boost::posix_time::microseconds (1000));
+  }
+
 }
 #endif
 std::string test_directory;
@@ -285,7 +326,7 @@ int main(int argc, char** argv)
     cv::imshow("depthVariance",coloredDepthVariance);
     cv::imshow("age",coloredAge);
 #ifdef _ENABLE_PCL
-    displayPointCloud (H.d,i.data.cast<double>(),coloredDepthVariance);
+    //displayPointCloud (H.d,i.data.cast<double>(),coloredDepthVariance,H.var);
 #endif
     k = cv::waitKey(2);
   }
