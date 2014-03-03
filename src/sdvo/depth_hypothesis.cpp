@@ -34,7 +34,7 @@ void depth_hypothesis::update_hypothesis(const Eigen::Affine3d &transformationx,
 void
 depth_hypothesis::regularise_hypothesis()
 {
-  depth_map_regulariser regularise(1./d,var);
+  depth_map_regulariser regularise(1./d,var,outlier_probability);
   d = 1./regularise.get_inverse_depth_regularised();
   var = regularise.get_inverse_depth_regularised_variance();
 
@@ -60,7 +60,8 @@ depth_hypothesis::add_observation_to_hypothesis(const cv::Mat1f depth_obs,
   depth_map_fusionner fusion(1./depth_obs,var_obs,1./d,var);
   depth_map_regulariser
       regularise(fusion.get_inverse_depth_posterior(),
-                 fusion.get_inverse_depth_posterior_variance());
+                 fusion.get_inverse_depth_posterior_variance(),
+                 outlier_probability);
   d = 1./regularise.get_inverse_depth_regularised();
   var = regularise.get_inverse_depth_regularised_variance();
 
