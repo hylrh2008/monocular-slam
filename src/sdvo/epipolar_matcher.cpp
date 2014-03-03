@@ -14,15 +14,15 @@ using namespace std;
 using namespace cv;
 
 #define CLOSE_DISTANCE 0.5
-#define FAR_DISTANCE 150
-#define VARIANCE_MAX 0.02
-#define SIGMA_I 8
-#define SIGMA_L 50
-#define LENGTH_EPIPOLAR_MAX 200
+#define FAR_DISTANCE 128
+#define VARIANCE_MAX 0.005
 #define SEUIL_ERROR2_SSD 64
 #define SEUIL_DIFF_PIXEL_FOR_SSD 5
+#define SIGMA_I 2
+#define SIGMA_L 12
+#define LENGTH_EPIPOLAR_MAX 150
 #define GRADIENT2_MIN 40
-#define BUFFER_LENGTH 5
+#define BUFFER_LENGTH 10
 #define DRAW
 
 namespace sdvo{
@@ -285,10 +285,10 @@ bool epipolar_matcher::compute_new_observation()
       cv::Point2d p = cv::Point2d(pixel_to_compute.front());
       pixel_to_compute.pop();
       // On rejette les pixels qui sont trop vieux (Attention age est inversé en fait)
-      if(ref_age < pixel_age(p)){
-        next_pixel_to_compute.push(p);
-        continue;
-      }
+//      if(ref_age < pixel_age(p)){
+//        next_pixel_to_compute.push(p);
+//        continue;
+//      }
       float d_prior_close;
       float d_prior_far;
       bool newH;
@@ -301,6 +301,7 @@ bool epipolar_matcher::compute_new_observation()
       else{
         d_prior_close = 1./(1./depth_prior(p) + 2 * inverse_depth_prior_variance(p));
         d_prior_far   = 1./(1./depth_prior(p) - 2 * inverse_depth_prior_variance(p));
+        if(d_prior_far < 0 || d_prior_far > FAR_DISTANCE) d_prior_far = FAR_DISTANCE;
         newH=false;
       }
       //      if(int(p.y) % 10 == 0 && int(p.x) % 10== 0 && inverse_depth_prior_variance(p)>0.005){
@@ -319,7 +320,7 @@ bool epipolar_matcher::compute_new_observation()
       //--------------------------------------------------------------
       // Calcul du paramètre alpha de conversion en distance inverse
       //--------------------------------------------------------------
-      double alpha;
+
       if(cv::norm(epipolar_close_ref-epipolar_far_ref) == 0)
       {
         next_pixel_to_compute.push(p);
@@ -335,7 +336,8 @@ bool epipolar_matcher::compute_new_observation()
         //----------------------------------------------------
         // Calcul de la variance associée à la mesure courante
         //----------------------------------------------------
-        alpha = (abs(1./d_prior_close-1./d_prior_far) / cv::norm(epipolar_close_ref-epipolar_far_ref));
+        double alpha = (abs(1./d_prior_close-1./d_prior_far) / cv::norm(epipolar_close_ref-epipolar_far_ref));
+
         double variance = compute_error(p,epipole_direction_crt,SIGMA_L,SIGMA_I,alpha*alpha,*intensity_dx,*intensity_dy);
 
         observed_inverse_depth_variance(p) =  (variance < VARIANCE_MAX )? variance : observed_inverse_depth_variance(p);
@@ -409,11 +411,29 @@ bool epipolar_matcher::compute_new_observation()
       }
       else
       {
+
+        //---------------//
+        // Triangulation //
+        //---------------//
+        bool success = triangulate_and_populate_observation(p, match,
+                                                          se3_ref_from_crt);
+        if(!success){
+//          std::cerr <<"ERROR triangulate failed!"<<endl;
+//          std::cerr <<  p     <<  " "
+//                     <<  match << " "<<std::endl;
+
+          next_pixel_to_compute.push(p);
+          continue;
+        }
+        else if(newH){
+          pixel_age(p)= ref_age;
+        }
+
 #ifdef DRAW
         //-------------------------------------//
         // On trace des épipolaires pour debug //
         //-------------------------------------//
-        if(int(p.y) % 5 == 0 && int(p.x) % 5== 0){
+        if(newH){
           cv::line(overlay_last,p - 5*cv::Point2d(epipole_direction_crt),
                    p + 5 * cv::Point2d(epipole_direction_crt),1);
           cv::circle(overlay_last,p,8,Scalar(1));
@@ -421,30 +441,17 @@ bool epipolar_matcher::compute_new_observation()
           cv::circle(overlay_ref,match,8,Scalar(1));
         }
 #endif
-
-        //---------------//
-        // Triangulation //
-        //---------------//
-        bool success=triangulate_and_populate_observation(p, match,
-                                                          se3_ref_from_crt);
-        if(!success){
-          next_pixel_to_compute.push(p);
-          continue;
-        }
-        else if(newH){
-          pixel_age(p)= ref_age;
-        }
       }
     }
   }
 #ifdef DRAW
   cv::imshow("Intensity",crt_pyramid.level(0).intensity/255 + overlay_last);
-  //  for (int i = 0; i < overlay_ref_vector.size(); ++i) {
-  //    ostringstream oss;
-  //    oss<<"Intensity_Ref"<<i<<std::endl;
-  //    cv::imshow(oss.str(),ref[i]/255 + overlay_ref_vector[i]);
+    for (int i = 0; i < overlay_ref_vector.size(); ++i) {
+      ostringstream oss;
+      oss<<"Intensity_Ref"<<i<<std::endl;
+      cv::imshow(oss.str(),ref[i]/255 + overlay_ref_vector[i]);
 
-  //  }
+    }
   cv::imshow("Intensity_dx",cv::abs(crt_pyramid.level(0).intensity_dx/64));
   cv::imshow("Intensity_dy",cv::abs(crt_pyramid.level(0).intensity_dy/64));
 #endif

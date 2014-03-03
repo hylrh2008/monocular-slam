@@ -101,6 +101,28 @@ Mat colorised_variance(const cv::Mat1f & crt_inverse_depth_variance)
   return coloredDepthVariance;
 }
 
+Mat colorised_outliers_proba(sdvo::depth_hypothesis H)
+{
+  cv::Mat coloredOutlierProba;
+  cv::Mat scaleProba;
+  H.outlier_probability.convertTo(scaleProba,CV_8U,1./5.*255.);
+  cv::applyColorMap(scaleProba,coloredOutlierProba,cv::COLORMAP_JET);
+  cv::Mat maskProba(scaleProba == 0);
+  coloredOutlierProba.setTo(0,maskProba);
+
+  return coloredOutlierProba;
+}
+
+Mat colorised_age(sdvo::depth_hypothesis H)
+{
+  cv::Mat coloredAge;
+  cv::Mat maskAge(H.age != 0);
+  cv::applyColorMap((H.age+1)/10*255,coloredAge,cv::COLORMAP_RAINBOW);
+  coloredAge.setTo(0,~maskAge);
+
+  return coloredAge;
+}
+
 int main(int argc, char** argv)
 {
   cv::namedWindow("Observation");
@@ -125,7 +147,7 @@ int main(int argc, char** argv)
     for (int y = 0; y < depth.rows; ++y) {
       if(
          pyramidnew2.level(0).intensity_dx.at<float>(y,x) * pyramidnew2.level(0).intensity_dx.at<float>(y,x)
-          +
+         +
          pyramidnew2.level(0).intensity_dy.at<float>(y,x) * pyramidnew2.level(0).intensity_dy.at<float>(y,x)
          < 30){
         pyramid.level(0).depth.at<float>(y,x)=0;
@@ -219,7 +241,7 @@ int main(int argc, char** argv)
                        * cumul_t_since_last.matrix()(2,3));
 
 
-    if(norm < 0.02){
+    if(norm < 0.03){
       H.regularise_hypothesis();
       for (int x = 0; x < H.d.cols; ++x) {
         for (int y = 0; y < H.d.rows; ++y) {
@@ -227,13 +249,16 @@ int main(int argc, char** argv)
              pyramidnew2.level(0).intensity_dx.at<float>(y,x) * pyramidnew2.level(0).intensity_dx.at<float>(y,x)
              +
              pyramidnew2.level(0).intensity_dy.at<float>(y,x) * pyramidnew2.level(0).intensity_dy.at<float>(y,x)
-             < 100){
+             < 3){
             H.outlier_probability(y,x)++;
+            H.remove_pixel_hypothesis(y,x);
+
           }
           assert(H.d(y,x)>=0);
           assert(H.var(y,x)>=0);
         }
       }
+      H.regularise_hypothesis();
     }
     else
     {
@@ -253,23 +278,25 @@ int main(int argc, char** argv)
       //--------
       // FUSION
       //--------
+
+      //H.check_gradient_norm();
+      H.add_observation_to_hypothesis(obs,obs_var);
       for (int x = 0; x < H.d.cols; ++x) {
         for (int y = 0; y < H.d.rows; ++y) {
-          if(
+
+          if(H.d(y,x)!=0 &&
              pyramidnew2.level(0).intensity_dx.at<float>(y,x) * pyramidnew2.level(0).intensity_dx.at<float>(y,x)
              +
              pyramidnew2.level(0).intensity_dy.at<float>(y,x) * pyramidnew2.level(0).intensity_dy.at<float>(y,x)
-             < 100){
-            H.outlier_probability(y,x)++;
+             < 3){
+            //H.outlier_probability(y,x)++;
+            H.remove_pixel_hypothesis(y,x);
           }
           assert(H.d(y,x)>=0);
           assert(H.var(y,x)>=0);
         }
       }
-
-      //H.check_gradient_norm();
-      H.add_observation_to_hypothesis(obs,obs_var);
-
+      H.regularise_hypothesis();
 
       //--------
       // DISPLAY
@@ -310,24 +337,25 @@ int main(int argc, char** argv)
     }
     cv::Mat coloredDepthVariance = colorised_variance(H.var);
     cv::Mat coloredDepth = colorised_depth(H.d);
+    cv::Mat coloredAge = colorised_age(H);
+    cv::Mat coloredOutlierProba = colorised_outliers_proba(H);
+
     cv::Mat mask(H.d!=0);
     cv::Mat id(rgbnew);
-
     id.setTo(cv::Vec3d::zeros(),mask);
     coloredDepth.setTo(cv::Vec3d::zeros(),~mask);
     coloredDepthVariance.setTo(cv::Vec3d::zeros(),~mask);
 
-    cv::Mat coloredAge;
-    cv::Mat maskAge(H.age != 0);
-    cv::applyColorMap((H.age+1)/10*255,coloredAge,cv::COLORMAP_RAINBOW);
-    coloredAge.setTo(0,~maskAge);
 
     cv::imshow("depth",coloredDepth+id);
     cv::imshow("depthVariance",coloredDepthVariance);
     cv::imshow("age",coloredAge);
+    cv::imshow("outlier",coloredOutlierProba);
+
+    k = cv::waitKey(2);
+
 #ifdef _ENABLE_PCL
     //displayPointCloud (H.d,i.data.cast<double>(),coloredDepthVariance,H.var);
 #endif
-    k = cv::waitKey(2);
   }
 }

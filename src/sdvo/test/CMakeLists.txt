@@ -21,3 +21,10 @@ create_test(depth_map_fusionner_test
   depth_map_fusionner_test
   "${CMAKE_CURRENT_SOURCE_DIR}/depth_map_fusionner_test"
 )
+
+create_test_custom_executable(depth_map_regulariser_test "depth_map_regulariser_test.cpp")
+target_link_libraries(depth_map_regulariser_test sdvo dvo)
+create_test(depth_map_regulariser_test
+  depth_map_regulariser_test
+  "${CMAKE_CURRENT_SOURCE_DIR}/depth_map_regulariser_test"
+)
