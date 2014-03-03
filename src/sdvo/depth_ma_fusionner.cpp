@@ -1,6 +1,6 @@
 #include <sdvo/depth_ma_fusionner.h>
 
-depth_ma_fusionner::depth_ma_fusionner(const cv::Mat & _inverse_depth_observation,
+depth_map_fusionner::depth_map_fusionner(const cv::Mat & _inverse_depth_observation,
                                        const cv::Mat & _inverse_depth_observation_variance,
                                        const cv::Mat & _inverse_depth_prior,
                                        const cv::Mat & _inverse_depth_prior_variance):

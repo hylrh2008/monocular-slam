@@ -48,7 +48,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_nominal)
   cv::Mat1f inverse_depth_obs = cv::Mat1f(5,5,data_inverse_depth_obs);
   cv::Mat1f variance_obs = cv::Mat1f(5,5,data_variance2_obs) ;
 
-  depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
+  depth_map_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
   //std::cerr<<posterior<<std::endl;
@@ -96,7 +96,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_obs_variance)
   cv::Mat1f inverse_depth_obs = cv::Mat1f(5,5,data_inverse_depth_obs);
   cv::Mat1f variance_obs = cv::Mat1f(5,5,data_variance2_obs) ;
 
-  depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
+  depth_map_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
   //std::cerr<<posterior<<std::endl;
@@ -144,7 +144,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_prior_variance)
   cv::Mat1f inverse_depth_obs = cv::Mat1f(5,5,data_inverse_depth_obs);
   cv::Mat1f variance_obs = cv::Mat1f(5,5,data_variance2_obs) ;
 
-  depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
+  depth_map_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
   //std::cerr<<posterior<<std::endl;
@@ -193,7 +193,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_obs_data_no_prior_dat
   cv::Mat1f inverse_depth_obs = cv::Mat1f(5,5,data_inverse_depth_obs);
   cv::Mat1f variance_obs = cv::Mat1f(5,5,data_variance2_obs) ;
 
-  depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
+  depth_map_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
   //std::cerr<<posterior<<std::endl;
@@ -241,7 +241,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_obs_variance_no_prior
   cv::Mat1f inverse_depth_obs = cv::Mat1f(5,5,data_inverse_depth_obs);
   cv::Mat1f variance_obs = cv::Mat1f(5,5,data_variance2_obs) ;
 
-  depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
+  depth_map_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
 
@@ -287,7 +287,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_obs_data)
   cv::Mat1f inverse_depth_obs = cv::Mat1f(5,5,data_inverse_depth_obs);
   cv::Mat1f variance_obs = cv::Mat1f(5,5,data_variance2_obs) ;
 
-  depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
+  depth_map_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
   //std::cerr<<posterior<<std::endl;
@@ -335,7 +335,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_obs_data_no_obs_varia
   cv::Mat1f inverse_depth_obs = cv::Mat1f(5,5,data_inverse_depth_obs);
   cv::Mat1f variance_obs = cv::Mat1f(5,5,data_variance2_obs) ;
 
-  depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
+  depth_map_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
   //std::cerr<<posterior<<std::endl;
@@ -383,7 +383,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_prior_data)
   cv::Mat1f inverse_depth_obs = cv::Mat1f(5,5,data_inverse_depth_obs);
   cv::Mat1f variance_obs = cv::Mat1f(5,5,data_variance2_obs) ;
 
-  depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
+  depth_map_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
   std::cerr<<posterior<<std::endl;
@@ -431,7 +431,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_data_no_variance)
   cv::Mat1f inverse_depth_obs = cv::Mat1f(5,5,data_inverse_depth_obs);
   cv::Mat1f variance_obs = cv::Mat1f(5,5,data_variance2_obs) ;
 
-  depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
+  depth_map_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
 
@@ -477,7 +477,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_obs_variance_no_prior
   cv::Mat1f inverse_depth_obs = cv::Mat1f(5,5,data_inverse_depth_obs);
   cv::Mat1f variance_obs = cv::Mat1f(5,5,data_variance2_obs) ;
 
-  depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
+  depth_map_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
 
@@ -523,7 +523,7 @@ TEST(depth_map_fusionner_test, depth_map_fusionner_test_no_obs_data_no_prior_var
   cv::Mat1f inverse_depth_obs = cv::Mat1f(5,5,data_inverse_depth_obs);
   cv::Mat1f variance_obs = cv::Mat1f(5,5,data_variance2_obs) ;
 
-  depth_ma_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
+  depth_map_fusionner fusion(inverse_depth_obs,variance_obs,inverse_depth_prior,variance_prior);
   cv::Mat1f posterior = fusion.get_inverse_depth_posterior();
   cv::Mat1f variance = fusion.get_inverse_depth_posterior_variance();
 

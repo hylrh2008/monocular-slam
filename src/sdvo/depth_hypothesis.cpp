@@ -57,7 +57,7 @@ void
 depth_hypothesis::add_observation_to_hypothesis(const cv::Mat1f depth_obs,
                                                 const cv::Mat1f var_obs)
 {
-  depth_ma_fusionner fusion(1./depth_obs,var_obs,1./d,var);
+  depth_map_fusionner fusion(1./depth_obs,var_obs,1./d,var);
   depth_map_regulariser
       regularise(fusion.get_inverse_depth_posterior(),
                  fusion.get_inverse_depth_posterior_variance());
