@@ -28,15 +28,9 @@ file_stream_input_image::file_stream_input_image(
     std::string current_filename(entry.path().filename().c_str());
     boost::smatch sm;
     boost::regex_match(current_filename, sm, file_match);
-    if (sm.size() > 0)
+    if (sm.size() > 1)
     {
-      std::string result;
-      boost::regex_replace(
-            std::back_inserter(result),
-            current_filename.begin(),
-            current_filename.end(),
-            file_match,
-            std::string("$1"));
+      std::string result = sm[1];
 
       _files.insert(
             file_container::value_type(
@@ -62,6 +56,7 @@ file_stream_input_image::get_next_image(void)
     cv::Mat result = cv::imread(_current_file->second, _cv_load_code);
     _current_time_stamp = _current_file->first;
     ++_current_file;
+    assert(result.data);
     return result;
   }
 

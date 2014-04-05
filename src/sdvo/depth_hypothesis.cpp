@@ -1,4 +1,14 @@
 #include <sdvo/depth_hypothesis.h>
+#include <sdvo/depth_map_regulariser.h>
+#include <sdvo/depth_ma_fusionner.h>
+
+#define SEUIL_OUTLIER 1
+#define TRESHOLD_INTENSITY_CHANGE 50
+#define PROBA_INCREASE_AFTER_GRADIENT_DEFAULT 0.5
+#define PROBA_INCREASE_AFTER_INTENSITY_CHANGE 0.3
+#define GRADIENT2_MIN 80
+#define SIGMA_UPDATE 0.001
+
 namespace sdvo{
 depth_hypothesis::depth_hypothesis(const cv::Mat1f & depth_init,
                                    const cv::Mat1f & variance_init,
@@ -13,20 +23,27 @@ depth_hypothesis::depth_hypothesis(const cv::Mat1f & depth_init,
   oy(oy),
   precise_position(cv::Mat2f::zeros(depth_init.size())),
   outlier_probability(cv::Mat1f::zeros(depth_init.size())),
-  age(cv::Mat1b::zeros(depth_init.size())),
+  age(cv::Mat1b::ones(depth_init.size())),
   height(depth_init.rows),
   width(depth_init.cols){}
 
-void depth_hypothesis::update_hypothesis(const Eigen::Affine3d &transformationx,
-                                         const cv::Mat1f & new_intensity)
+void
+depth_hypothesis::remove_outliers()
 {
   for (int x = 0; x < width; ++x) {
     for (int y = 0; y < height; ++y) {
-      if(outlier_probability(y,x) >=3 ){
+      if(outlier_probability(y,x) >= SEUIL_OUTLIER){
         remove_pixel_hypothesis(y,x);
       }
     }
   }
+}
+
+void
+depth_hypothesis::update_hypothesis(const Eigen::Affine3d &transformationx,
+                                    const cv::Mat1f & new_intensity)
+{
+  remove_outliers();
   warp_hypothesis(transformationx,new_intensity);
   intensity_img = new_intensity;
 }
@@ -34,13 +51,19 @@ void depth_hypothesis::update_hypothesis(const Eigen::Affine3d &transformationx,
 void
 depth_hypothesis::regularise_hypothesis()
 {
-  depth_map_regulariser regularise(1./d,var,outlier_probability);
-  d = 1./regularise.get_inverse_depth_regularised();
-  var = regularise.get_inverse_depth_regularised_variance();
-
+  depth_map_regulariser regularise(this);
 }
-void depth_hypothesis::check_gradient_norm(){
-  //TODO;
+
+void depth_hypothesis::check_gradient_norm(const cv::Mat1f & gradientNorm2 ){
+  for (int x = 0; x < d.cols; ++x) {
+    for (int y = 0; y < d.rows; ++y) {
+      if(d(y,x)!=0 && gradientNorm2(y,x) < GRADIENT2_MIN){
+        outlier_probability(y,x) += PROBA_INCREASE_AFTER_GRADIENT_DEFAULT;
+      }
+      assert(d(y,x)>=0);
+      assert(var(y,x)>=0);
+    }
+  }
 }
 
 void
@@ -58,13 +81,8 @@ depth_hypothesis::add_observation_to_hypothesis(const cv::Mat1f depth_obs,
                                                 const cv::Mat1f var_obs)
 {
   depth_map_fusionner fusion(1./depth_obs,var_obs,1./d,var);
-  depth_map_regulariser
-      regularise(fusion.get_inverse_depth_posterior(),
-                 fusion.get_inverse_depth_posterior_variance(),
-                 outlier_probability);
-  d = 1./regularise.get_inverse_depth_regularised();
-  var = regularise.get_inverse_depth_regularised_variance();
-
+  d = 1./fusion.get_inverse_depth_posterior();
+  var = fusion.get_inverse_depth_posterior_variance();
 }
 
 void depth_hypothesis::warp_hypothesis(const Eigen::Affine3d &transformationx,
@@ -75,7 +93,9 @@ void depth_hypothesis::warp_hypothesis(const Eigen::Affine3d &transformationx,
 
 
 void
-depth_hypothesis::warp_maps_forward(const Eigen::Affine3d& transformationx, const cv::Mat1f &old_intensity, const cv::Mat1f &new_intensity)
+depth_hypothesis::warp_maps_forward(const Eigen::Affine3d& transformationx,
+                                    const cv::Mat1f &old_intensity,
+                                    const cv::Mat1f &new_intensity)
 {
 
   bool identity = transformationx.affine().isIdentity(1e-6);
@@ -88,8 +108,8 @@ depth_hypothesis::warp_maps_forward(const Eigen::Affine3d& transformationx, cons
 
   const float* depth_ptr = d.ptr<float>();
 
-  float x_precise;
-  float y_precise;
+  double x_precise;
+  double y_precise;
 
   for(size_t y = 0; y < height; ++y)
   {
@@ -107,7 +127,8 @@ depth_hypothesis::warp_maps_forward(const Eigen::Affine3d& transformationx, cons
         x_precise = x;
         y_precise = y;
       }
-      float depth = *depth_ptr;
+
+      double depth = *depth_ptr;
       Eigen::Vector3d p3d((x_precise - ox) * depth / fx,
                           (y_precise - oy) * depth / fy,
                           depth);
@@ -115,40 +136,73 @@ depth_hypothesis::warp_maps_forward(const Eigen::Affine3d& transformationx, cons
       if(!identity)
       {
         Eigen::Vector3d p3d_transformed = transformationx * p3d;
+
         if(p3d_transformed(2) < 0) continue;
 
-        float x_projected =
-            (float) (p3d_transformed(0) * fx / p3d_transformed(2) + ox);
+        double x_projected =
+            (double) (p3d_transformed(0) * fx / p3d_transformed(2) + ox);
 
-        float y_projected =
-            (float) (p3d_transformed(1) * fy / p3d_transformed(2) + oy);
+        double y_projected =
+            (double) (p3d_transformed(1) * fy / p3d_transformed(2) + oy);
 
         if(0 <= x_projected && x_projected<width &&
            0 <= y_projected && y_projected<height)
         {
+
           int xp, yp;
           xp = (int) std::floor(x_projected);
           yp = (int) std::floor(y_projected);
-
+          if(std::abs(old_intensity(y,x)-new_intensity(yp,xp)) > TRESHOLD_INTENSITY_CHANGE){
+            outlier_probability(y, x) += PROBA_INCREASE_AFTER_INTENSITY_CHANGE;
+          }
           if(0<x_projected && x_projected<d.cols &&
              0<y_projected && y_projected<d.rows)
           {
-            if(warped_depth(yp, xp) == 0 || warped_depth(yp, xp) > depth + 0.05){
+            if(warped_depth(yp, xp) == 0)
+            {
               warped_depth(yp, xp) = p3d_transformed(2);
-              warped_variance(yp, xp) = std::pow(p3d_transformed(2)/p3d(2),int(4)) * var.at<float>(y, x) + 0.00001;
+
+              warped_variance(yp, xp) =
+                  std::pow(p3d_transformed(2)/p3d(2),int(4)) * var(y, x) + SIGMA_UPDATE;
+
               next_precise_pos(yp,xp) = cv::Vec2f(x_projected,y_projected);
 
               warped_outliers_proba(yp,xp) = outlier_probability(y,x);
+
               warped_age(yp,xp) = age(y,x);
 
-              if(abs(old_intensity(y,x)-new_intensity(yp,xp))>50){
-                outlier_probability(yp, xp)++;
-              }
+            }
+            else if(std::abs(1./warped_depth(yp, xp) - 1./depth) < var(y,x))
+            {
+              double var_new = std::pow(p3d_transformed(2)/p3d(2),int(4)) * var(y, x) + SIGMA_UPDATE;
+              double var_sum = warped_variance(yp, xp) + var_new;
 
+              warped_depth(yp, xp) = (warped_variance(yp, xp) * p3d_transformed(2) + var_new * warped_depth(yp ,xp)) / var_sum;
+
+
+              warped_variance(yp, xp) = (var_new * warped_variance(yp, xp)) / var_sum;
+
+              next_precise_pos(yp,xp) = cv::Vec2f(x_projected,y_projected);
+
+              warped_outliers_proba(yp,xp) = outlier_probability(y,x);
+
+              warped_age(yp,xp) = age(y,x);
+            }
+            else if(warped_depth(yp, xp) > depth)
+            {
+              warped_depth(yp, xp) = p3d_transformed(2);
+
+              warped_variance(yp, xp) =
+                  std::pow(p3d_transformed(2)/p3d(2),int(4)) * var(y, x) + SIGMA_UPDATE;
+
+              next_precise_pos(yp,xp) = cv::Vec2f(x_projected,y_projected);
+
+              warped_outliers_proba(yp,xp) = outlier_probability(y,x);
+
+              warped_age(yp,xp) = age(y,x);
             }
           }
         }
-        p3d = p3d_transformed;
       }
     }
   }

@@ -210,8 +210,8 @@ bool RgbdImage::calculateIntensityDerivatives()
   assert(hasIntensity());
 
   calculateDerivativeX<IntensityType>(intensity, intensity_dx);
-  //calculateDerivativeY<IntensityType>(intensity, intensity_dy);
-  calculateDerivativeYSseFloat(intensity, intensity_dy);
+  calculateDerivativeY<IntensityType>(intensity, intensity_dy);
+  //calculateDerivativeYSseFloat(intensity, intensity_dy);
   /*
   cv::Mat dy_ref, diff;
   calculateDerivativeY<IntensityType>(intensity, dy_ref);
@@ -240,18 +240,20 @@ void RgbdImage::calculateDerivativeX(const cv::Mat& img, cv::Mat& result)
 {
   result.create(img.size(), img.type());
 
-  for(int y = 0; y < img.rows; ++y)
+  cv::Mat tmp_gaussian;
+  cv::GaussianBlur(img,tmp_gaussian,cv::Size(3,3),2);
+
+  for(int y = 1; y < img.rows-1; ++y)
   {
-    for(int x = 0; x < img.cols; ++x)
+    for(int x = 1; x < img.cols-1; ++x)
     {
       int prev = std::max(x - 1, 0);
       int next = std::min(x + 1, img.cols - 1);
-
-      result.at<T>(y, x) = (T) (img.at<T>(y, next) - img.at<T>(y, prev)) * 0.5f;
+      result.at<T>(y, x) = (T) (tmp_gaussian.at<T>(y, next) - tmp_gaussian.at<T>(y, prev)) * 0.5f;
     }
   }
 
-  //cv::Sobel(img, result, -1, 1, 0, 3, 1.0f / 4.0f, 0, cv::BORDER_REPLICATE);
+//  cv::Sobel(img, result, -1, 1, 0, 5, 1.0f / 4.0f, 0, cv::BORDER_REPLICATE);
 
   // compiler auto-vectorization
   /*
@@ -278,7 +280,8 @@ template<typename T>
 void RgbdImage::calculateDerivativeY(const cv::Mat& img, cv::Mat& result)
 {
   result.create(img.size(), img.type());
-
+  cv::Mat tmp_gaussian;
+  cv::GaussianBlur(img,tmp_gaussian,cv::Size(3,3),2);
   for(int y = 0; y < img.rows; ++y)
   {
     for(int x = 0; x < img.cols; ++x)
@@ -286,10 +289,10 @@ void RgbdImage::calculateDerivativeY(const cv::Mat& img, cv::Mat& result)
       int prev = std::max(y - 1, 0);
       int next = std::min(y + 1, img.rows - 1);
 
-      result.at<T>(y, x) = (T) (img.at<T>(next, x) - img.at<T>(prev, x)) * 0.5f;
+      result.at<T>(y, x) = (T) (tmp_gaussian.at<T>(next, x) - tmp_gaussian.at<T>(prev, x)) * 0.5f;
     }
   }
-  //cv::Sobel(img, result, -1, 0, 1, 3, 1.0f / 4.0f, 0, cv::BORDER_REPLICATE);
+//  cv::Sobel(img, result, -1, 0, 1, 5, 1.0f / 4.0f, 0, cv::BORDER_REPLICATE);
 
   // compiler auto-vectorization
   /*

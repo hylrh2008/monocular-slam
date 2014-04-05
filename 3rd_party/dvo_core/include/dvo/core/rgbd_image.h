@@ -115,9 +115,14 @@ public:
 
   RgbdImagePyramid(cv::Mat intensity, cv::Mat depth);
 
+  RgbdImagePyramid(RgbdImagePyramid const&) = default;
+
   void compute(const size_t num_levels);
 
   RgbdImage& level(size_t idx);
+
+  RgbdImage const& level(size_t idx) const
+  { return const_cast<RgbdImagePyramid*>(this)->level(idx); }
 
 private:
   std::vector<RgbdImage> levels;

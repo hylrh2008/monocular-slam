@@ -14,7 +14,6 @@ class file_stream_input_image
     : public image_input
 {
 public:
-
   file_stream_input_image(
       std::string const& directory_name,
       std::string const& image_base_name,

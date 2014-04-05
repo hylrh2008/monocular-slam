@@ -28,3 +28,10 @@ create_test(depth_map_regulariser_test
   depth_map_regulariser_test
   "${CMAKE_CURRENT_SOURCE_DIR}/depth_map_regulariser_test"
 )
+
+create_test_custom_executable(opencv_point_test "opencv_point_test.cpp")
+target_link_libraries(opencv_point_test sdvo dvo)
+create_test(opencv_point_test
+  opencv_point_test
+  "${CMAKE_CURRENT_SOURCE_DIR}/opencv_point_test"
+)

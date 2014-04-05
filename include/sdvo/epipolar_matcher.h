@@ -10,7 +10,7 @@ class epipolar_matcher
 public:
   epipolar_matcher(const Eigen::Matrix3d & intrinsics_matrix);
 
-  bool push_new_data_in_buffer(dvo::core::RgbdImagePyramid && pyr, Eigen::Affine3d && transform_from_start);
+  bool push_new_data_in_buffer(dvo::core::RgbdImagePyramid const& pyr, Eigen::Affine3d const& transform_from_start);
 
   bool compute_new_observation();
 
@@ -70,6 +70,8 @@ private:
   bool triangulate_and_populate_observation(const cv::Point2d & p,
                                             const cv::Point2d & match,
                                             const Eigen::Affine3d & se3_ref_from_crt);
+  float find_min_var_over_neighbours(cv::Point2d p);
+
   bool b_matrices_inited;
 
   //-------------------------------

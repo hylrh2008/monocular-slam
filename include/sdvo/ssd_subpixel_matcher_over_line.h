@@ -36,11 +36,11 @@ private:
   std::vector<float> data_moving;
 
   int crt_write_index;
-  float computeSSD(const float *vec1, const float *vec2, int len);
-  float getSubpix(const cv::Mat1f &img, const cv::Point2f &pt);
+  inline float computeSSD(const float *vec1, const float *vec2, int len);
+  inline float getSubpix(const cv::Mat1f &img, const cv::Point2f &pt);
+  inline float getSubpixFixedPoint(const cv::Mat1f &img, const cv::Point2f &pt);
   float match();
-  float getSubpixFixedPoint(const cv::Mat1f &img, const cv::Point2f &pt);
-  int borderInterpolate(int p, int len);
+  inline int borderInterpolate(int p, int len);
 };
 
 #endif // SSD_SUBPIXEL_MATCHER_OVER_LINE_H

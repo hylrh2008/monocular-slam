@@ -3,6 +3,7 @@
 #include <opencv2/core/eigen.hpp>
 #include <sdvo/ssd_subpixel_matcher_over_line.h>
 #include <queue>
+
 #undef _OPENMP
 #ifdef _OPENMP
 #include <omp.h>
@@ -13,16 +14,22 @@
 using namespace std;
 using namespace cv;
 
-#define CLOSE_DISTANCE 0.5
-#define FAR_DISTANCE 128
-#define VARIANCE_MAX 0.005
-#define SEUIL_ERROR2_SSD 64
-#define SEUIL_DIFF_PIXEL_FOR_SSD 5
-#define SIGMA_I 2
-#define SIGMA_L 12
-#define LENGTH_EPIPOLAR_MAX 150
-#define GRADIENT2_MIN 40
-#define BUFFER_LENGTH 10
+#define CLOSE_DISTANCE 0.5 // New hypothesis distance min
+#define FAR_DISTANCE 128 // New hypothesis distance max
+
+#define VARIANCE_MAX 0.08 // Typical 0.01 Variance estimation max for browsing epipolar segment
+#define BUFFER_LENGTH 100 // Number of images to keep in buffer
+
+#define SEUIL_ERROR2_SSD 500 // Typical SEUIL_DIFF_PIXEL_FOR_SSD*SEUIL_DIFF_PIXEL_FOR_SSD + epsilon  If the square error is larger than this number, stereo matching failed.
+#define SEUIL_DIFF_PIXEL_FOR_SSD 10 // Typical 5 Max intensity level difference between two pixel to search for subpixel stereo matching accuracy
+#define SSD_STEP 0.2 // Distance in pixel between two equidistant point in SSD
+
+#define SIGMA_I2 49 // Typical 49 As defined in paper, involve in error which depends on gradient norm
+#define SIGMA_L2 04 // Typical 4 As defined in paper, involve in error which depends on gradient direction only
+
+#define LENGTH_EPIPOLAR_MAX 30 // Typical 30 When hypothesis exists, browse epipolar only if its size is smaller than this number
+#define GRADIENT2_MIN 100 // Typical 50 Recjet all image area where gradient is smaller than this number
+
 #define DRAW
 
 namespace sdvo{
@@ -124,19 +131,17 @@ double epipolar_matcher::compute_error(const cv::Point2d & point,
   double photometricError2 = INFINITY;
 
   for (int i = -2; i < 2; ++i) {
-    cv::Point2d pt_i(point + i * cv::Point2d(epipole_direction));
+    cv::Point2d pt_i(point + i * SSD_STEP * cv::Point2d(epipole_direction));
 
-    pt_i.x = std::max(0.,pt_i.x);
-    pt_i.x = std::min(double(intensity_dx.cols-1),pt_i.x);
-    pt_i.y = std::max(0.,pt_i.y);
-    pt_i.y = std::min(double(intensity_dx.rows-1),pt_i.y);
+    pt_i.x = std::max(0.,std::min(double(intensity_dx.cols-1),pt_i.x));
+    pt_i.y = std::max(0.,std::min(double(intensity_dy.rows-1),pt_i.y));
 
-    cv::Vec2d g = cv::Vec2d(intensity_dx.at<float>(pt_i),
-                            intensity_dy.at<float>(pt_i));
+    cv::Vec2d g = cv::Vec2d(intensity_dx(pt_i),
+                            intensity_dy(pt_i));
 
     cv::Vec2d g_normalized = cv::normalize(g);
 
-    double geometricError2_i = sigma2_l/std::pow(g_normalized.dot(epipole_direction),int(2));
+    double geometricError2_i = sigma2_l / std::pow(g_normalized.dot(epipole_direction),int(2));
 
     double photometricError2_i = 2 * sigma2_i/std::pow(g.dot(epipole_direction),int(2));
 
@@ -151,15 +156,14 @@ double epipolar_matcher::compute_error(const cv::Point2d & point,
   return alpha2 * (geometricError2 + photometricError2);
 }
 
-bool epipolar_matcher::push_new_data_in_buffer(dvo::core::RgbdImagePyramid && pyr,
-                                               Eigen::Affine3d && transform_from_start)
+bool epipolar_matcher::push_new_data_in_buffer(dvo::core::RgbdImagePyramid const& pyr,
+                                               Eigen::Affine3d const& transform_from_start)
 {
   if(!b_matrices_inited) init_matrices(pyr.level(0).intensity.size());
-  if(last_images_buffer.full()) pixel_age = pixel_age - 1;
+  if(last_images_buffer.full()) pixel_age = max(pixel_age - 1,0);
   last_images_buffer.push_back(
         std::make_pair<dvo::core::RgbdImagePyramid,Eigen::Affine3d>(
-          std::forward<dvo::core::RgbdImagePyramid>(pyr),
-          std::forward<Eigen::Affine3d>(transform_from_start)));
+          dvo::core::RgbdImagePyramid(pyr), Eigen::Affine3d(transform_from_start)));
 }
 
 inline Eigen::Vector3d
@@ -212,6 +216,20 @@ epipolar_matcher::triangulate_and_populate_observation(const cv::Point2d & p,
   return true;
 }
 
+float epipolar_matcher::find_min_var_over_neighbours(cv::Point2d p)
+{
+  float smooth_var = INFINITY;
+  for(int x = -1; x < 2 ; x++){
+    for(int y = -1; y < 2 ; y++){
+      if(inverse_depth_prior_variance(p.y + y, p.x + x) < smooth_var &&
+         inverse_depth_prior_variance(p.y + y, p.x + x) != 0){
+        smooth_var = inverse_depth_prior_variance(p.y + y, p.x + x) ;
+      }
+    }
+  }
+  return smooth_var;
+}
+
 bool epipolar_matcher::compute_new_observation()
 {
   int ref_age = 0;
@@ -232,13 +250,19 @@ bool epipolar_matcher::compute_new_observation()
   int cols=crt_pyramid.level(0).intensity.cols;
   cv::Mat1f* intensity_dx = (cv::Mat1f*)&crt_pyramid.level(0).intensity_dx;
   cv::Mat1f* intensity_dy = (cv::Mat1f*)&crt_pyramid.level(0).intensity_dy;
+#ifdef DRAW
+  cv::Mat1b  gradient_was_sufficent = cv::Mat1b::zeros(rows,cols);
+#endif
 
-  // On rejette l'endroit si ya pas de gradient du tout
+  // On rejette l'endroit si ya pas de gradient
 #pragma omp parallel_for schedule(static,1)
-  for (int r = 0;  r < rows ; r++) {
-    for (int c = 0;  c < cols ; c++){
+  for (int r = 5;  r < rows-5 ; r++) {
+    for (int c = 5;  c < cols-5 ; c++){
       if((*intensity_dx)(r,c) * (*intensity_dx)(r,c) + (*intensity_dy)(r,c) * (*intensity_dy)(r,c) > GRADIENT2_MIN){
         next_pixel_to_compute.push(cv::Point2d(c,r));
+#ifdef DRAW
+        gradient_was_sufficent(r,c) = 255;
+#endif
       }
     }
   }
@@ -252,7 +276,7 @@ bool epipolar_matcher::compute_new_observation()
   for(boost::circular_buffer< std::pair<dvo::core::RgbdImagePyramid,Eigen::Affine3d> >::iterator ref_it = last_images_buffer.begin();
       !next_pixel_to_compute.empty() &&
       ref_it!=last_images_buffer.end()-1
-      //&& ref_it!=last_images_buffer.begin() + 5  // On bloque
+      //&& ref_it!=last_images_buffer.begin() + 1  // On bloque
       ;
       ref_it++,ref_age++){
 
@@ -262,7 +286,8 @@ bool epipolar_matcher::compute_new_observation()
 
 #ifdef DRAW
     ref.push_back(ref_pyramid.level(0).intensity);
-    overlay_ref_vector.push_back(cv::Mat::zeros(crt_pyramid.level(0).intensity.size(),crt_pyramid.level(0).intensity.type()));
+    overlay_ref_vector.push_back(cv::Mat::zeros(crt_pyramid.level(0).intensity.size(),
+                                                crt_pyramid.level(0).intensity.type()));
     cv::Mat overlay_ref(overlay_ref_vector.back());
 #endif
 
@@ -270,6 +295,14 @@ bool epipolar_matcher::compute_new_observation()
 
     const Eigen::Affine3d se3_ref_from_crt = se3_world_from_ref.inverse() * se3_world_from_crt;
 
+    //-----------------
+    //Si l'angle est trop grand entre deux images, passer à l'image suivante.
+    //-----------------
+    //    Eigen::Vector3d eulers = se3_ref_from_crt.rotation().matrix().eulerAngles(2,1,3);
+    //    if(eulers[0]>0.3 || eulers[1]>0.3){
+    //      if(eulers[0]-3.14)
+    //      continue;
+    //    }
     const Eigen::Vector4d epipole_in_reference = se3_ref_from_crt * Eigen::Vector4d(0,0,0,1);
     const Eigen::Vector3d epipole_in_reference_z_equal_one = ProjectInZEqualOne(epipole_in_reference);
     const Eigen::Vector3d epipole_in_reference_pixel = intrinsics_matrix * epipole_in_reference_z_equal_one;
@@ -284,23 +317,31 @@ bool epipolar_matcher::compute_new_observation()
     while(!pixel_to_compute.empty()) {
       cv::Point2d p = cv::Point2d(pixel_to_compute.front());
       pixel_to_compute.pop();
-      // On rejette les pixels qui sont trop vieux (Attention age est inversé en fait)
-//      if(ref_age < pixel_age(p)){
-//        next_pixel_to_compute.push(p);
-//        continue;
-//      }
+      //--------------------
+      // On rejette les pixels qui sont trop vieux (Attention l'age est inversé en fait) //Marche pas bien en l'état
+      //--------------------
+      if(ref_age + 1 < pixel_age(p)){
+        next_pixel_to_compute.push(p);
+        continue;
+      }
       float d_prior_close;
       float d_prior_far;
       bool newH;
+
       if(depth_prior(p)==0 || isnan(depth_prior(p)) ||
-         inverse_depth_prior_variance.at<float>(p) == 0 || isnan(inverse_depth_prior_variance.at<float>(p))){
+         inverse_depth_prior_variance.at<float>(p) == 0 ||
+         isnan(inverse_depth_prior_variance.at<float>(p))){
+        //Pas d'hypothèse
         d_prior_close = CLOSE_DISTANCE;
         d_prior_far = FAR_DISTANCE;
         newH=true;
       }
       else{
-        d_prior_close = 1./(1./depth_prior(p) + 2 * inverse_depth_prior_variance(p));
-        d_prior_far   = 1./(1./depth_prior(p) - 2 * inverse_depth_prior_variance(p));
+        //Présence d'hypothèse
+        float smooth_var = find_min_var_over_neighbours(p);
+
+        d_prior_close = 1./(1./depth_prior(p) + 2 * smooth_var);
+        d_prior_far   = 1./(1./depth_prior(p) - 2 * smooth_var);
         if(d_prior_far < 0 || d_prior_far > FAR_DISTANCE) d_prior_far = FAR_DISTANCE;
         newH=false;
       }
@@ -321,12 +362,12 @@ bool epipolar_matcher::compute_new_observation()
       // Calcul du paramètre alpha de conversion en distance inverse
       //--------------------------------------------------------------
 
-      if(cv::norm(epipolar_close_ref-epipolar_far_ref) == 0)
+      if(cv::norm(epipolar_close_ref-epipolar_far_ref) < 1)
       {
         next_pixel_to_compute.push(p);
         continue;
       }
-      else if(cv::norm(epipolar_close_ref-epipolar_far_ref) > LENGTH_EPIPOLAR_MAX)
+      else if( /*!newH &&*/ cv::norm(epipolar_close_ref-epipolar_far_ref) > LENGTH_EPIPOLAR_MAX)
       {
         next_pixel_to_compute.push(p);
         continue;
@@ -336,9 +377,15 @@ bool epipolar_matcher::compute_new_observation()
         //----------------------------------------------------
         // Calcul de la variance associée à la mesure courante
         //----------------------------------------------------
-        double alpha = (abs(1./d_prior_close-1./d_prior_far) / cv::norm(epipolar_close_ref-epipolar_far_ref));
+        double alpha = (abs(1./d_prior_close-1./d_prior_far) / cv::norm(epipolar_close_ref - epipolar_far_ref));
 
-        double variance = compute_error(p,epipole_direction_crt,SIGMA_L,SIGMA_I,alpha*alpha,*intensity_dx,*intensity_dy);
+        double variance = compute_error(p,
+                                        epipole_direction_crt,
+                                        SIGMA_L2,//* (BUFFER_LENGTH-ref_age),
+                                        SIGMA_I2,
+                                        alpha*alpha,
+                                        *intensity_dx,
+                                        *intensity_dy);
 
         observed_inverse_depth_variance(p) =  (variance < VARIANCE_MAX )? variance : observed_inverse_depth_variance(p);
       }
@@ -354,12 +401,19 @@ bool epipolar_matcher::compute_new_observation()
       //---------------------------------------------------------------//
       bool bmatch = false;
 
+      if(epipolar_close_ref.x<0 || epipolar_close_ref.x > 640 || epipolar_close_ref.y<0 || epipolar_close_ref.y > 480 ||
+         epipolar_far_ref.x<0 || epipolar_far_ref.x > 640 || epipolar_far_ref.y<0 || epipolar_far_ref.y > 480)
+      {
+        next_pixel_to_compute.push(p);
+        continue;
+      }
 
-      cv::LineIterator line_it(ref_pyramid.level(0).intensity,
-                               epipolar_close_ref,
-                               epipolar_far_ref,
-                               4
-                               );
+      cv::LineIterator
+          line_it(ref_pyramid.level(0).intensity,
+                  epipolar_close_ref,
+                  epipolar_far_ref,
+                  4
+                  );
 
       float intensity_crt = crt_pyramid.level(0).intensity.at<float>(p);
 
@@ -368,44 +422,58 @@ bool epipolar_matcher::compute_new_observation()
 
       for (int i = 0; i < line_it.count; ++i, line_it++)
       {
-        float intensity_ref = ref_pyramid.level(0).intensity.at<float>(line_it.pos());
-        if(std::abs(intensity_ref-intensity_crt) <= SEUIL_DIFF_PIXEL_FOR_SSD){
-          cv::Point2d pos_line=(line_it.pos());
+        cv::Point2d pos_line=(line_it.pos());
 
-          SSD_Subpixel_Matcher_Over_Line line_matcher(crt_pyramid.level(0).intensity,
-                                                      ref_pyramid.level(0).intensity,
-                                                      p,
-                                                      pos_line - 5 * cv::Point2d(epipole_direction_ref),
-                                                      pos_line + 5 * cv::Point2d(epipole_direction_ref),
-                                                      epipole_direction_ref,
-                                                      epipole_direction_crt,1,5);
+        float intensity_ref = ref_pyramid.level(0).intensity.at<float>(pos_line);
+        float gradient_norm2_in_ref =
+            ref_pyramid.level(0).intensity_dx.at<float>(pos_line) * ref_pyramid.level(0).intensity_dx.at<float>(pos_line) +
+            ref_pyramid.level(0).intensity_dy.at<float>(pos_line) * ref_pyramid.level(0).intensity_dy.at<float>(pos_line);
+
+        // Avec raffinement sous-pixelique
+        if(std::abs(intensity_ref-intensity_crt) <= SEUIL_DIFF_PIXEL_FOR_SSD && gradient_norm2_in_ref > GRADIENT2_MIN/2){
+          SSD_Subpixel_Matcher_Over_Line
+              line_matcher(crt_pyramid.level(0).intensity,
+                           ref_pyramid.level(0).intensity,
+                           p,
+                           pos_line - 5 * cv::Point2d(epipole_direction_ref),
+                           pos_line + 5 * cv::Point2d(epipole_direction_ref),
+                           epipole_direction_ref,
+                           epipole_direction_crt,SSD_STEP,int(5./SSD_STEP) + int(5./SSD_STEP) % 2 - 1);
 
           if(line_matcher.get_error2() < error){
             error = line_matcher.get_error2();
             match = line_matcher.getMatch_point();
           }
-          //ESSAI DANS LAUTRE SENS
-          SSD_Subpixel_Matcher_Over_Line line_matcher2(crt_pyramid.level(0).intensity,
-                                                      ref_pyramid.level(0).intensity,
-                                                      p,
-                                                      pos_line + 5 * cv::Point2d(epipole_direction_ref),
-                                                      pos_line - 5 * cv::Point2d(epipole_direction_ref),
-                                                      -epipole_direction_ref,
-                                                      epipole_direction_crt,1,5);
+          //          SSD_Subpixel_Matcher_Over_Line
+          //              line_matcher2(crt_pyramid.level(0).intensity,
+          //                           ref_pyramid.level(0).intensity,
+          //                           p,
+          //                           pos_line + 5 * cv::Point2d(epipole_direction_ref),
+          //                           pos_line - 5 * cv::Point2d(epipole_direction_ref),
+          //                           - epipole_direction_ref,
+          //                           epipole_direction_crt,SSD_STEP,int(5./SSD_STEP) + int(5./SSD_STEP) % 2 - 1);
 
-          if(line_matcher2.get_error2() < error){
-            error = line_matcher2.get_error2();
-            match = line_matcher2.getMatch_point();
-          }
+          //          if(line_matcher2.get_error2() < error){
+          //            error = line_matcher.get_error2();
+          //            match = line_matcher.getMatch_point();
+          //          }
         }
-
+        // Sans raffinement sous-pixellique
+        /*
+         * if(std::abs(intensity_ref-intensity_crt) <= error){
+          error = std::abs(intensity_ref-intensity_crt);
+          match = line_it.pos();
+        }*/
       }
+
+
       if(error < SEUIL_ERROR2_SSD) bmatch=true;
       //--------------------------------------------//
       // On a trouvé un match il reste à trianguler //
       //--------------------------------------------//
 
       if(bmatch!=true){
+        pixel_age(p) = ref_age + 1;
         next_pixel_to_compute.push(p);
         continue;
       }
@@ -416,29 +484,29 @@ bool epipolar_matcher::compute_new_observation()
         // Triangulation //
         //---------------//
         bool success = triangulate_and_populate_observation(p, match,
-                                                          se3_ref_from_crt);
+                                                            se3_ref_from_crt);
         if(!success){
-//          std::cerr <<"ERROR triangulate failed!"<<endl;
-//          std::cerr <<  p     <<  " "
-//                     <<  match << " "<<std::endl;
+          //          std::cerr <<"ERROR triangulate failed!"<<endl;
+          //          std::cerr <<  p     <<  " "
+          //                     <<  match << " "<<std::endl;
 
           next_pixel_to_compute.push(p);
           continue;
         }
         else if(newH){
-          pixel_age(p)= ref_age;
+          pixel_age(p) = ref_age + 1;
         }
 
 #ifdef DRAW
         //-------------------------------------//
         // On trace des épipolaires pour debug //
         //-------------------------------------//
-        if(newH){
+        if(int(p.x) % 5 == 0 && int(p.y) % 5 == 0){
           cv::line(overlay_last,p - 5*cv::Point2d(epipole_direction_crt),
                    p + 5 * cv::Point2d(epipole_direction_crt),1);
-          cv::circle(overlay_last,p,8,Scalar(1));
+          cv::circle(overlay_last,p,3,Scalar(1));
           cv::line(overlay_ref,epipolar_close_ref,epipolar_far_ref,1);
-          cv::circle(overlay_ref,match,8,Scalar(1));
+          cv::circle(overlay_ref,match,3,Scalar(1));
         }
 #endif
       }
@@ -446,14 +514,13 @@ bool epipolar_matcher::compute_new_observation()
   }
 #ifdef DRAW
   cv::imshow("Intensity",crt_pyramid.level(0).intensity/255 + overlay_last);
-    for (int i = 0; i < overlay_ref_vector.size(); ++i) {
-      ostringstream oss;
-      oss<<"Intensity_Ref"<<i<<std::endl;
-      cv::imshow(oss.str(),ref[i]/255 + overlay_ref_vector[i]);
+  //  for (int i = 0; i < overlay_ref_vector.size(); ++i) {
+  //    ostringstream oss;
+  //    oss<<"Intensity_Ref"<<i;
+  //    cv::imshow(oss.str(),ref[i]/255 + overlay_ref_vector[i]);
+  //  }
+  cv::imshow("EnoughGradient",gradient_was_sufficent);
 
-    }
-  cv::imshow("Intensity_dx",cv::abs(crt_pyramid.level(0).intensity_dx/64));
-  cv::imshow("Intensity_dy",cv::abs(crt_pyramid.level(0).intensity_dy/64));
 #endif
   return true;
 }

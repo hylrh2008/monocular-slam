@@ -5,7 +5,7 @@ Semi-Dense Visual Odometry:
     
     ☐ Faire ou copier un système simple de visualisation 3D temps réel.
     
-    ☐ Ecrire la logique de matching stereo
+    ✔ Ecrire la logique de matching stereo @done (14-03-01 01:46)
          ✔ Calculer ligne épipolaire a partir du déplacement @done (14-02-16 18:20)
          ✔ Calculer les estimations d'incertitudes @done (14-02-16 18:20)
            ✔ Geométrique @done (14-02-16 18:20)
@@ -18,11 +18,14 @@ Semi-Dense Visual Odometry:
          ☐ Ecrire la logique de choix de l'image de référence
 
     ✔ Ecrire la logique de fusion bayésienne de l'information de profondeur @done (14-02-20 00:04)
-         ☐ La tester avec une odometry "parfaite" (image Kinect)
+         ☐ La tester avec une odometry "parfaite"
          ☐ La tester en vrai en série avec le tracking.
          ☐ En faire un autre thread?
    ☐ Régulariser la carte après la fusion
    ☐ Modifier l'algorithme d'odométrie pour prendre en entrée un poids par pixel déterminé (Sa covariance!)
    ☐ Optimiser ce qui peut l'être
    ✔ Paramétriser en inverse depth. @done (14-02-25 22:30)
-   ☐ Gerer la propagation de la variance de facon plus précise
+   ✔ Gerer la propagation de la variance de facon plus précise @done (14-03-01 01:47)
+
+
+     ☐ Ajout d'une mémoire d'age du pixel pour éviter de le rechercher dans une images trop vieille

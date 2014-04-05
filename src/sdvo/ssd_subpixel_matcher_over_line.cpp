@@ -1,12 +1,13 @@
 #include <sdvo/ssd_subpixel_matcher_over_line.h>
+#include <xmmintrin.h>
 
 int SSD_Subpixel_Matcher_Over_Line::borderInterpolate( int p, int len )
 {
-    if( (unsigned)p < (unsigned)len )
-        ;
-    else
-        p = p < 0 ? 0 : len - 1;
-    return p;
+  if( p < len && p > 0 )
+    ;
+  else
+    p = p < 0 ? 0 : len - 1;
+  return p;
 }
 
 float SSD_Subpixel_Matcher_Over_Line::getSubpixFixedPoint(const cv::Mat1f& img, const cv::Point2f & pt) {
@@ -87,39 +88,29 @@ inline float SSD_Subpixel_Matcher_Over_Line::getSubpix(const cv::Mat1f& img, con
   return out  ;
 }
 
-/* From Opencv*/
 float SSD_Subpixel_Matcher_Over_Line::computeSSD( const float *vec1, const float *vec2, int len )
 {
-  double sum = 0;
+  float sum = 0;
   int i;
 
-  for( i = 0; i <= len - 4; i += 4 )
+  for( i = 0; i < len; i++ )
   {
-    double v0 = vec1[i] - vec2[i];
-    double v1 = vec1[i + 1] - vec2[i + 1];
-    double v2 = vec1[i + 2] - vec2[i + 2];
-    double v3 = vec1[i + 3] - vec2[i + 3];
-
-    sum += v0 * v0 + v1 * v1 + v2 * v2 + v3 * v3;
-  }
-  for( ; i < len; i++ )
-  {
-    double v = vec1[i] - vec2[i];
-
+    float v = vec1[i] - vec2[i];
     sum += v * v;
   }
   return sum;
 }
 
-SSD_Subpixel_Matcher_Over_Line::SSD_Subpixel_Matcher_Over_Line(const cv::Mat & _img,
-                                                               const cv::Mat & _img_to_search,
-                                                               const cv::Point2f &_center_from_patch_in_img,
-                                                               const cv::Point2f &_startPoint,
-                                                               const cv::Point2f &_endPoint,
-                                                               const cv::Vec2f &_direction_in_img_to_search,
-                                                               const cv::Vec2f &_direction_in_img,
-                                                               float _step,
-                                                               int size):
+SSD_Subpixel_Matcher_Over_Line::
+SSD_Subpixel_Matcher_Over_Line(const cv::Mat & _img,
+                               const cv::Mat & _img_to_search,
+                               const cv::Point2f &_center_from_patch_in_img,
+                               const cv::Point2f &_startPoint,
+                               const cv::Point2f &_endPoint,
+                               const cv::Vec2f &_direction_in_img_to_search,
+                               const cv::Vec2f &_direction_in_img,
+                               float _step,
+                               int size):
   ssd_window_size(size),
   step(_step),
   img(_img),
@@ -147,7 +138,7 @@ SSD_Subpixel_Matcher_Over_Line::SSD_Subpixel_Matcher_Over_Line(const cv::Mat & _
 
 float SSD_Subpixel_Matcher_Over_Line::match(){
   cv::Vec2f crtPoint = startPoint;
-  double error_crt=INFINITY;
+  float error_crt=INFINITY;
 
   while(norm(crtPoint-endPoint) >= step){
     float* data_fixed_ordered = &data_fixed.data()[(ssd_window_size - crt_write_index) % ssd_window_size];
@@ -176,8 +167,8 @@ float SSD_Subpixel_Matcher_Over_Line::match(){
     }
     data_moving[crt_write_index % ssd_window_size] =
         getSubpix(img_to_search,
-                       crtPoint + (ssd_window_size/2+1) * step * direction_in_img_to_search);
-      crt_write_index++;
+                  crtPoint + (ssd_window_size/2+1) * step * direction_in_img_to_search);
+    crt_write_index++;
     crtPoint += step * direction_in_img_to_search;
   }
   return (error_crt)/float(ssd_window_size);

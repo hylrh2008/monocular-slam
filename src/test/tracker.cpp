@@ -10,8 +10,8 @@ class tracker_with_depth
 {
 public:
   tracker_with_depth(const std::string & dataset_folder):
-    rgb_source(dataset_folder + "/rgb/", "", ".png",cv::IMREAD_ANYCOLOR),
-    depth_source(dataset_folder + "/depth/", "", ".png",cv::IMREAD_ANYDEPTH),
+    rgb_source(dataset_folder + "/rgb", "", "png",cv::IMREAD_ANYCOLOR),
+    depth_source(dataset_folder + "/depth", "", "png",cv::IMREAD_ANYDEPTH),
     create_rgbdpyramid()
   {
 
@@ -53,13 +53,15 @@ public:
 
     cv::Mat rgb;
     cv::Mat depth;
+    rgb = rgb_source.get_next_image();
+    depth = depth_source.get_next_image();
     std::string rgb_filename = rgb_source.get_current_file_name();
     std::string depth_filename = depth_source.get_current_file_name();
     logger.set_current_time_stamp(rgb_source.get_current_time_stamp());
     cv::Mat rgbnew = rgb_source.get_next_image();
     cv::Mat depthnew = depth_source.get_next_image();
-    dvo::core::RgbdImagePyramid pyramid = create_rgbdpyramid(rgbnew,depthnew);
-    dvo::core::RgbdImagePyramid pyramidnew = create_rgbdpyramid(rgbnew,depthnew);
+    dvo::core::RgbdImagePyramid pyramid = create_rgbdpyramid(rgb,depth,sdvo::cvmat_to_rhbdpyramid::TUMDATASET);
+    dvo::core::RgbdImagePyramid pyramidnew = create_rgbdpyramid(rgbnew,depthnew,sdvo::cvmat_to_rhbdpyramid::TUMDATASET);
     timeval start;
     timeval end;
     Eigen::Affine3d cumulated_transform(Eigen::Affine3d::Identity());
@@ -82,11 +84,13 @@ public:
       logger_relative.set_current_time_stamp(rgb_source.get_current_time_stamp());
 
       rgbnew = rgb_source.get_next_image();
+      depthnew = depth_source.get_next_image();
 
       while (depth_source.get_current_time_stamp() < rgb_source.get_current_time_stamp())
         depthnew = depth_source.get_next_image();
 
       pyramidnew  = create_rgbdpyramid(rgbnew,depthnew);
+
       Eigen::Affine3d transform = Eigen::Affine3d::Identity();
       gettimeofday(&start,NULL);
       tracker.match(pyramid,pyramidnew,transform);
@@ -109,15 +113,16 @@ public:
       std::cerr<<transform.matrix()<<std::endl;
 
       cv::imshow("Nouvelle",pyramidnew.level(0).intensity/255);
-//      cv::imshow("Ancienne",pyramid.level(0).intensity/255);
-//      cv::imshow("AncienneD",pyramid.level(0).depth);
+      cv::imshow("Ancienne",pyramid.level(0).intensity/255);
+      cv::imshow("AncienneD",pyramid.level(0).depth);
 
       cv::imshow("NouvelleD",pyramidnew.level(0).depth);
+
 
       std::cerr<<"rgb_filename :"<<rgb_filename<<std::endl;
       std::cerr<<"depth_filename :"<<depth_filename<<std::endl;
 
-      cv::waitKey(10);
+      cv::waitKey();
     }
   }
 };

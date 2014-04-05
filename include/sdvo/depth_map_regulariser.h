@@ -1,23 +1,23 @@
 #ifndef DEPTH_MAP_REGULARISER_H
 #define DEPTH_MAP_REGULARISER_H
 #include <opencv2/opencv.hpp>
+#include <sdvo/depth_hypothesis.h>
+
+namespace sdvo{
+
 class depth_map_regulariser
 {
 public:
-  depth_map_regulariser(const cv::Mat & in, const cv::Mat & in_var,const cv::Mat1f & outliersProba);
-  cv::Mat1f get_inverse_depth_regularised(){return out;}
-  cv::Mat1f get_inverse_depth_regularised_variance(){return out_var;}
-
+  depth_map_regulariser(depth_hypothesis * _H);
 private:
+  depth_hypothesis & H;
+
   cv::Mat1f tmp;
   cv::Mat1f tmp_var;
+  cv::Mat1b tmp_age;
 
-  cv::Mat1f out;
-  cv::Mat1f out_var;
-
-  cv::Mat1f outlier_proba;
-  void smooth_map(const cv::Mat1f &in_var, const cv::Mat1f &in);
+  void smooth_map();
   void fill_holes();
 };
-
+} // End SDVO
 #endif // DEPTH_MAP_REGULARISER_H
